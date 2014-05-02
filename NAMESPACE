@@ -1,0 +1,8 @@
+export(bisquare)
+export(cubic)
+export(epanechnikov)
+export(lagr)
+export(lagr.sel)
+export(spherical)
+import(SGL)
+import(foreach)

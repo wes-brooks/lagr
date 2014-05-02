@@ -1,0 +1,15 @@
+\name{lagr}
+\alias{lagr}
+\title{Fit a lagr model}
+\usage{
+lagr(formula, data, family, weights = NULL, coords, fit.loc = NULL,
+  tuning = FALSE, predict = FALSE, simulation = FALSE, oracle = NULL,
+  kernel, bw = NULL, varselect.method = c("AIC", "BIC", "AICc"),
+  verbose = FALSE, longlat, tol.loc = NULL, N = 1, bw.type = c("dist",
+  "knn", "nen"), parallel = FALSE, D = NULL, interact = FALSE,
+  resid.type = c("deviance", "pearson"))
+}
+\description{
+Fit a lagr model
+}
+

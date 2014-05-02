@@ -1,7 +1,7 @@
-Package: lager
+Package: lagr
 Title: Local, adaptive, grouped regularization
 Description: 
-  Version: 0.1
+Version: 0.1
 Author: Wesley Brooks <brooks.wesley@gmail.com>
-  Maintainer: Wesley Brooks <brooks.wesley@gmail.com>
-  License: MIT
+Maintainer: Wesley Brooks <brooks.wesley@gmail.com>
+License: MIT

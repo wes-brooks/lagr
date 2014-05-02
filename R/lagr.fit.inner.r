@@ -1,4 +1,5 @@
-lager.fit.inner = function(x, y, coords, loc, event=NULL, family, varselect.method, tuning, predict, simulation, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE, interact, N=1, oracle=oracle) {
+#' Fit a LAGR model
+lagr.fit.inner = function(x, y, coords, loc, event=NULL, family, varselect.method, tuning, predict, simulation, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE, interact, N=1, oracle=oracle) {
 
   #Find which observations were made at the model location  
   colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))
@@ -70,8 +71,7 @@ lager.fit.inner = function(x, y, coords, loc, event=NULL, family, varselect.meth
     sumw = sum(w[permutation])
     
     #Use the adaptive group lasso to produce a local model:
-    model = SGL(data=list(x=xxx, y=yyy), weights=w[permutation], index=vargroup, standardize=FALSE, alpha=0, nlam=80, min.frac=0.001, adaptive=TRUE)
-
+    model = SGL(data=list(x=xxx, y=yyy), weights=w[permutation], index=vargroup, standardize=FALSE, alpha=0, delta=2, nlam=50, min.frac=0.001, adaptive=TRUE)
     
     vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
     df = model[['results']][['df']]
@@ -165,13 +165,13 @@ loss = sumw * (log(apply(model[['results']][['residuals']], 2, function(x) sum(w
   }
   
   if (tuning) {
-    return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=colnames(xxx)[vars[[k]]], weightsum=sumw, loss=loss))
+    return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=raw.names[unique(vargroup[vars[[k]]])], weightsum=sumw, loss=loss))
   } else if (predict) {
-    return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, sigma2=s2, nonzero=colnames(xxx)[vars[[k]]]))
+    return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, sigma2=s2, nonzero=raw.names[unique(vargroup[vars[[k]]])]))
   } else if (simulation) {
     #return(list(tunelist=tunelist, coef=coefs, coeflist=coef.list, s=k, sigma2=s2, coef.unshrunk=coefs.unshrunk, s2.unshrunk=s2.unshrunk, coef.unshrunk.list=coef.unshrunk.list, fitted=localfit, nonzero=colnames(x)[vars[[k]]], actual=predy[colocated], weightsum=sum(w), loss=loss))
-    return(list(tunelist=tunelist, coef=coefs, coeflist=coef.list, s=k, sigma2=s2, fitted=localfit, alpha=alpha, nonzero=colnames(xxx)[vars[[k]]], actual=yyy[colocated], weightsum=sumw, loss=loss))
+    return(list(tunelist=tunelist, coef=coefs, coeflist=coef.list, s=k, sigma2=s2, fitted=localfit, alpha=alpha, nonzero=raw.names[unique(vargroup[vars[[k]]])], actual=yyy[colocated], weightsum=sumw, loss=loss))
   } else {
-    return(list(model=model, loss=loss, coef=coefs, coeflist=coef.list, nonzero=colnames(xxx)[vars[[k]]], s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, N=N, fitted=localfit, weightsum=sumw))
+    return(list(model=model, loss=loss, coef=coefs, coeflist=coef.list, nonzero=raw.names[unique(vargroup[vars[[k]]])], s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, N=N, fitted=localfit, weightsum=sumw))
   }
 }

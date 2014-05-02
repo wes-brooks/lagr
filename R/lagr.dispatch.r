@@ -1,9 +1,9 @@
-lager.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, tol.loc, N, interact, resid.type) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, min.dist, max.dist, tol.loc, N, interact, resid.type) {
   if (!is.null(fit.loc)) { coords.unique = unique(fit.loc) }
   else { coords.unique = unique(coords) }
   n = dim(coords.unique)[1]
   
-  lager.object = list()
+  lagr.object = list()
   
   #For the adaptive bandwith methods, use a default tolerance if none is specified:
   if (is.null(tol.loc)) {tol.loc = target / 1000}
@@ -15,7 +15,9 @@ lager.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw.type, ver
     total.weight = sum(max.weights * prior.weights)
   }
   
+  #models = list()
   models = foreach(i=1:n, .packages=c('SGL'), .errorhandling='remove') %dopar% {
+  #for(i in 1:n) {
     loc = coords.unique[i,]
     dist = drop(D[i,])
     
@@ -26,7 +28,7 @@ lager.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw.type, ver
       
     #Compute the bandwidth that sets the sum of weights around location i equal to target?
     } else if (bw.type == 'knn') {
-      opt = optimize(lager.knn,
+      opt = optimize(lagr.knn,
                      lower=min.dist,
                      upper=max.dist,
                      maximum=FALSE,
@@ -44,7 +46,7 @@ lager.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw.type, ver
       
     #Compute the bandwidth so that the sum of the local weighted squared error equals the target?
     } else if (bw.type == 'nen') {
-      opt = optimize(lager.ssr,
+      opt = optimize(lagr.ssr,
                      lower=min.dist,
                      upper=max.dist, 
                      maximum=FALSE,
@@ -68,7 +70,7 @@ lager.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw.type, ver
     }
     
     #Fit the local model
-    m = lager.fit.inner(x=x,
+    m = lagr.fit.inner(x=x,
                         y=y,
                         family=family,
                         coords=coords,
@@ -89,15 +91,16 @@ lager.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw.type, ver
     }
     
     return(m)
+    #models[[i]] = m
   }
   
-  lager.object[['models']] = models
+  lagr.object[['models']] = models
   
   if (tuning) { }
   else if (predict) { }
   else if (simulation) { }
-  else {lager.object[['coords']] = coords}
+  else {lagr.object[['coords']] = coords}
   
-  class(lager.object) = 'lager.object'
-  return(lager.object)
+  class(lagr.object) = 'lagr.object'
+  return(lagr.object)
 }

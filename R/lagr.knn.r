@@ -1,4 +1,4 @@
-lager.knn = function(bw, coords, indx=NULL, loc, dist, verbose, prior.weights, total.weight, kernel, target) {
+lagr.knn = function(bw, coords, indx=NULL, loc, dist, verbose, prior.weights, total.weight, kernel, target) {
     kernel.weights = kernel(dist, bw)
 
     if (!is.null(indx)) {
