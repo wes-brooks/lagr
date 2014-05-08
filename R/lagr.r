@@ -27,7 +27,7 @@ lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuni
     if (!is.null(weights) && !is.numeric(weights)) 
       stop("'weights' must be a numeric vector")
     if (is.null(weights)) 
-      weights <- rep(as.numeric(1), dp.n)
+      weights <- rep(as.numeric(1), nrow(data))
     if (any(is.na(weights))) 
       stop("NAs in weights")
     if (any(weights < 0)) 

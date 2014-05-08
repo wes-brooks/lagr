@@ -15,9 +15,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
     total.weight = sum(max.weights * prior.weights)
   }
   
-  #models = list()
   models = foreach(i=1:n, .packages=c('SGL'), .errorhandling='remove') %dopar% {
-  #for(i in 1:n) {
     loc = coords.unique[i,]
     dist = drop(D[i,])
     
@@ -91,7 +89,6 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
     }
     
     return(m)
-    #models[[i]] = m
   }
   
   lagr.object[['models']] = models

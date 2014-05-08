@@ -5,3 +5,4 @@ Version: 0.1
 Author: Wesley Brooks <brooks.wesley@gmail.com>
 Maintainer: Wesley Brooks <brooks.wesley@gmail.com>
 License: MIT
+Depends: SGL, Matrix, foreach
