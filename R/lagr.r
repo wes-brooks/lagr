@@ -1,6 +1,6 @@
 #' Fit a lagr model
 #' @export
-lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, N=1, bw.type=c('dist','knn','nen'), parallel=FALSE, D=NULL, interact=FALSE, resid.type=c('deviance','pearson')) {
+lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, N=1, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson')) {
 
     #If the data was provided as a spatial data frame, then extract both the data and the coordinates.
     if (is(data, "Spatial")) {
@@ -27,7 +27,7 @@ lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuni
     if (!is.null(weights) && !is.numeric(weights)) 
       stop("'weights' must be a numeric vector")
     if (is.null(weights)) 
-      weights <- rep(as.numeric(1), nrow(data))
+      weights <- rep(1, nrow(data))
     if (any(is.na(weights))) 
       stop("NAs in weights")
     if (any(weights < 0)) 
@@ -95,7 +95,6 @@ lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuni
                                     min.dist=min.dist,
                                     max.dist=max.dist,
                                     tol.loc=tol.loc,
-                                    interact=interact,
                                     resid.type=resid.type)
 
     #Store results from model fitting:
@@ -111,7 +110,6 @@ lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuni
         res[['bw']] = bw
         res[['bw.type']] = bw.type
         res[['varselect.method']] = varselect.method
-        res[['interact']] = interact
     }
     class(res) = "lagr"
 

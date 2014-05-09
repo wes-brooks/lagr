@@ -1,6 +1,6 @@
 #' Estimate the bandwidth parameter for a LAGR model
 #' @export
-lagr.sel = function(formula, data=list(), family, range=NULL, weights=NULL, coords, oracle=NULL, kernel=gwr.Gauss, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, parallel=FALSE, interact=FALSE, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson')) {
+lagr.sel = function(formula, data=list(), family, range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson')) {
   if (is.null(longlat) || !is.logical(longlat)) 
     longlat <- FALSE
   if (missing(coords)) 
@@ -58,7 +58,7 @@ lagr.sel = function(formula, data=list(), family, range=NULL, weights=NULL, coor
   opt <- optimize(lagr.cv.f, interval=c(beta1, beta2), tol=tol.bw, maximum=FALSE,
     formula=formula, coords=coords, env=oo, oracle=oracle, family=family, varselect.method=varselect.method,
     kernel=kernel, verbose=verbose, longlat=longlat, data=data, bw.type=bw.type,
-    weights=weights, tol.loc=tol.loc, parallel=parallel, N=1, interact=interact,
+    weights=weights, tol.loc=tol.loc, N=1,
     resid.type=resid.type, bwselect.method=bwselect.method)
   trace = oo$trace[!duplicated(oo$trace[,1]),]
   rm(oo)

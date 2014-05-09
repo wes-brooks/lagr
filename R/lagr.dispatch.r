@@ -1,4 +1,4 @@
-lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, min.dist, max.dist, tol.loc, N, interact, resid.type) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, min.dist, max.dist, tol.loc, N, resid.type) {
   if (!is.null(fit.loc)) { coords.unique = unique(fit.loc) }
   else { coords.unique = unique(coords) }
   n = dim(coords.unique)[1]
@@ -61,8 +61,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
                      family=family,
                      oracle=oracle,
                      prior.weights=prior.weights,
-                     target=target,
-                     interact=interact)
+                     target=target)
       bandwidth = opt$minimum
       kernel.weights = drop(kernel(dist, bandwdth))
     }
@@ -80,8 +79,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
                         simulation=simulation,
                         verbose=verbose,
                         kernel.weights=kernel.weights,
-                        prior.weights=prior.weights,
-                        interact=interact, 
+                        prior.weights=prior.weights,, 
                         oracle=oracle)
     
     if (verbose) {

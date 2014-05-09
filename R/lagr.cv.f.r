@@ -1,4 +1,4 @@
-lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, oracle, varselect.method, verbose, longlat, tol.loc, bw.type, N, parallel, interact, bwselect.method, resid.type) {    
+lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, oracle, varselect.method, verbose, longlat, tol.loc, bw.type, N, bwselect.method, resid.type) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
     lagr.model = lagr(formula=formula,
@@ -15,8 +15,6 @@ lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, or
                       verbose=verbose,
                       longlat=longlat,
                       bw.type=bw.type,
-                      parallel=parallel,
-                      interact=interact,
                       tol.loc=tol.loc,
                       resid.type=resid.type)
   
@@ -26,7 +24,7 @@ lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, or
    	    trH = sum(sapply(lagr.model[['model']][['models']], function(x) tail(x[['tunelist']][['df-local']],1)))
    	    loss = nrow(data) * (log(mean(sapply(lagr.model[['model']][['models']], function(x) {x[['tunelist']][['ssr-loc']][[resid.type]]}))) + 1 + (2*(trH+1))/(nrow(data)-trH-2) + log(2*pi))
     } else if (bwselect.method=='GCV') {
-        trH = sum(sapply(lagr.model[['model']][['models']], function(x) {tail(x[['tunelist']][['trace.local']],1)})) 
+        trH = sum(sapply(lagr.model[['model']][['models']], function(x) {tail(x[['tunelist']][['trace-local']],1)})) 
         loss = sum(sapply(lagr.model[['model']][['models']], function(x) {x[['tunelist']][['ssr-loc']][[resid.type]]})) / (nrow(data)-trH)**2
     } else if (bwselect.method=='BICg') {
         trH = sum(sapply(lagr.model[['model']][['models']], function(x) {
