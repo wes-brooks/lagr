@@ -48,13 +48,14 @@ lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuni
     x <- model.matrix(mt, mf)
 
     #Get the matrices of distances and weights
+    D.coords = rbind(coords, fit.loc)
     if (is.null(D)) {
-        n = dim(coords)[1]
+        n = nrow(D.coords)
         if (longlat) {
-            D = as.matrix(earth.dist(coords),n,n)
+            D = as.matrix(earth.dist(D.coords),n,n)
         } else {
-            Xmat = matrix(rep(coords[,1], times=n), n, n)
-            Ymat = matrix(rep(coords[,2], times=n), n, n)
+            Xmat = matrix(rep(D.coords[,1], times=n), n, n)
+            Ymat = matrix(rep(D.coords[,2], times=n), n, n)
             D = sqrt((Xmat-t(Xmat))**2 + (Ymat-t(Ymat))**2)
         }
     }

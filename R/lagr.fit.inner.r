@@ -67,7 +67,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, tuning, p
         xxx = xx.interacted[permutation,]
         yyy = yy[permutation]
         sumw = sum(w[permutation])
-    
+        
         #Use the adaptive group lasso to produce a local model:
         model = SGL(data=list(x=xxx, y=yyy), weights=w[permutation], index=vargroup, maxit=100, standardize=FALSE, alpha=0, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, adaptive=TRUE)
     
