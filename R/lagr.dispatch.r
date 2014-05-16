@@ -73,6 +73,10 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
             kernel.weights = drop(kernel(dist, bandwdth))
         }
 
+        #If we have specified covariates via an oracle, then use those
+        if (!is.null(oracle)) {oracle.loc = oracle[[i]]}
+        else {oracle.loc = NULL}
+
         #Fit the local model
         m = list(tunelist=list('ssr-loc'=list('pearson'=Inf, 'deviance'=Inf), 'df-local'=1), 'sigma2'=0, 'nonzero'=vector(), 'weightsum'=sum(kernel.weights))
         try( m <- lagr.fit.inner(x=x,
@@ -88,7 +92,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
                             verbose=verbose,
                             kernel.weights=kernel.weights,
                             prior.weights=prior.weights,
-                            oracle=oracle)
+                            oracle=oracle.loc)
         )
         if (verbose) {
             cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; sigma2=", round(tail(m[['sigma2']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))

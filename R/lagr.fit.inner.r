@@ -1,6 +1,5 @@
 #' Fit a LAGR model
-lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, tuning, predict, simulation, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE, N=1, oracle=oracle) {
-
+lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE, N=1) {
     #Find which observations were made at the model location  
     colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))
 
@@ -8,10 +7,17 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, tuning, p
     if (sum(kernel.weights)==length(colocated)) {
         return(list('tunelist'=list('df-local'=1, 'ssr-loc'=list('pearson'=Inf, 'deviance'=Inf))))
     }
+  
+    #Use oracular variable selection if specified
+    orig.names = colnames(x)
+    if (!is.null(oracle)) {
+        x = matrix(x[,oracle], nrow=nrow(x), ncol=length(oracle))
+        colnames(x) = oracle
+    }
 
     #Establish groups for the group lasso
     vargroup = 1:ncol(x)
-  
+
     #Compute the covariate-by-location interactions
     raw.names = colnames(x)
     interact.names = vector()
@@ -68,44 +74,61 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, tuning, p
         yyy = yy[permutation]
         sumw = sum(w[permutation])
         
-        #Use the adaptive group lasso to produce a local model:
-        model = SGL(data=list(x=xxx, y=yyy), weights=w[permutation], index=vargroup, maxit=100, standardize=FALSE, alpha=0, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, adaptive=TRUE)
+        if (is.null(oracle)) {
+            #Use the adaptive group lasso to produce a local model:
+            model = SGL(data=list(x=xxx, y=yyy), weights=w[permutation], index=vargroup, maxit=100, standardize=FALSE, alpha=0, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, adaptive=TRUE)
     
-        vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
-        df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
+            vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
+            df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
+        } else {
+            model = glm(yyy~xxx, weights=w[permutation], family=family)
+            vars = list(1:ncol(xxx))
+            varset = vars[[1]]
+            df = ncol(xxx) + 1
 
-        if (sumw > ncol(x)) {
-            #Extract the fitted values for each lambda:
-            fitted = model[['results']][['fitted']]
-            s2 = sum(w[permutation]*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - df) 
-      
-            #Compute the loss (varies by family)
-            #loss = model[[varselect.method]]
-            if (varselect.method == 'AIC') {penalty = 2*df}
-            if (varselect.method == 'AICc') {penalty = 2*df + 2*df*(df+1)/(sumw - df - 1)}
-            if (varselect.method == 'BIC') {penalty = sumw*df}
-
-
-            #Assuming scale from the largest model:
-            #loss = sumw * log(s2) + apply(model[['results']][['residuals']], 2, function(x) sum(w[permutation]*x**2))/s2 + penalty
+            fitted = model$fitted
+            localfit = fitted[colocated]
+            s2 = summary(model)$dispersion
+            k = 1
 
             #Estimating scale in penalty formula:
-            loss = sumw * (log(apply(model[['results']][['residuals']], 2, function(x) sum(w[permutation]*x**2))) - log(sumw) + 1) + penalty
+            loss = sumw * log(sum(w[permutation] * model$residuals**2)) - log(sumw) + 1
+        }
 
-            #Estimating the loss only at the modeling location (not the total local loss)
-            #loss = (model[['results']][['residuals']][colocated,])**2 + penalty*w[permutation][colocated] / sumw
-
-            #Pick the lambda that minimizes the loss:
-            k = which.min(loss)
-            fitted = fitted[,k]
-            localfit = fitted[colocated]
-            df = df[k]
-            if (k > 1) {
-                varset = vars[[k]]
-            } else {
-                varset = NULL
-            }
+        if (sumw > ncol(x)) {
+            if (is.null(oracle)) {
+                #Extract the fitted values for each lambda:
+                fitted = model[['results']][['fitted']]
+                s2 = sum(w[permutation]*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - df) 
       
+                #Compute the loss (varies by family)
+                #loss = model[[varselect.method]]
+                if (varselect.method == 'AIC') {penalty = 2*df}
+                if (varselect.method == 'AICc') {penalty = 2*df + 2*df*(df+1)/(sumw - df - 1)}
+                if (varselect.method == 'BIC') {penalty = sumw*df}
+
+
+                #Assuming scale from the largest model:
+                #loss = sumw * log(s2) + apply(model[['results']][['residuals']], 2, function(x) sum(w[permutation]*x**2))/s2 + penalty
+
+                #Estimating scale in penalty formula:
+                loss = sumw * (log(apply(model[['results']][['residuals']], 2, function(x) sum(w[permutation]*x**2))) - log(sumw) + 1) + penalty
+
+                #Estimating the loss only at the modeling location (not the total local loss)
+                #loss = (model[['results']][['residuals']][colocated,])**2 + penalty*w[permutation][colocated] / sumw
+
+                #Pick the lambda that minimizes the loss:
+                k = which.min(loss)
+                fitted = fitted[,k]
+                localfit = fitted[colocated]
+                df = df[k]
+                if (k > 1) {
+                    varset = vars[[k]]
+                } else {
+                    varset = NULL
+                }
+            }      
+
             if (length(colocated)>0) {
                 tunelist[['ssr-loc']] = list()
                 tunelist[['ssr']] = list()
@@ -155,10 +178,24 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, tuning, p
         }
     
         #Get the coefficients:
-        coefs = t(rbind(model[['intercept']], model[['beta']]))[k,]
-        coefs = Matrix(coefs, ncol=1)
-        rownames(coefs) = c("(Intercept)", colnames(xxx))
-        coefs = coefs[c("(Intercept)", raw.names),]
+        if (is.null(oracle)) {
+            coefs = t(rbind(model[['intercept']], model[['beta']]))[k,]
+            coefs = Matrix(coefs, ncol=1)
+            rownames(coefs) = c("(Intercept)", colnames(xxx))
+            coefs = coefs[c("(Intercept)", raw.names),]
+        }
+        else {
+            coefs = Matrix(0, ncol=1, nrow=length(orig.names)+1)
+            rownames(coefs) = c("(Intercept)", orig.names)
+print(coefs)
+print(orig.names)
+
+            coef.vec = coef(model)
+            coefs["(Intercept)",] = coef.vec["(Intercept)"]
+print(coef.vec)
+print(coef.vec[raw.names])
+            coefs[raw.names,] = coef.vec[raw.names]
+        }        
 
         coef.list[[i]] = coefs
     }
