@@ -1,4 +1,4 @@
-lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, oracle, varselect.method, verbose, longlat, tol.loc, bw.type, N, bwselect.method, resid.type) {    
+lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, oracle, varselect.method, verbose, longlat, tol.loc, bw.type, bwselect.method, resid.type) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
     lagr.model = lagr(formula=formula,
@@ -10,7 +10,6 @@ lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, or
                       kernel=kernel,
                       oracle=oracle,
                       bw=bw,
-                      N=N,
                       varselect.method=varselect.method,
                       verbose=verbose,
                       longlat=longlat,

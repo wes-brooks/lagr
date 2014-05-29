@@ -1,4 +1,4 @@
-lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, min.dist, max.dist, tol.loc, N, resid.type) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, min.dist, max.dist, tol.loc, resid.type) {
     #if (!is.null(fit.loc)) { coords.unique = unique(fit.loc) }
     #else { coords.unique = unique(coords) }
     #n = nrow(coords.unique)
@@ -84,7 +84,6 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
                             family=family,
                             coords=coords,
                             loc=loc,
-                            N=N,
                             varselect.method=varselect.method,
                             tuning=tuning,
                             predict=predict,

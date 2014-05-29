@@ -58,7 +58,7 @@ lagr.sel = function(formula, data=list(), family, range=NULL, weights=NULL, coor
   opt <- optimize(lagr.cv.f, interval=c(beta1, beta2), tol=tol.bw, maximum=FALSE,
     formula=formula, coords=coords, env=oo, oracle=oracle, family=family, varselect.method=varselect.method,
     kernel=kernel, verbose=verbose, longlat=longlat, data=data, bw.type=bw.type,
-    weights=weights, tol.loc=tol.loc, N=1,
+    weights=weights, tol.loc=tol.loc,
     resid.type=resid.type, bwselect.method=bwselect.method)
   trace = oo$trace[!duplicated(oo$trace[,1]),]
   rm(oo)

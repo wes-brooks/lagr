@@ -1,6 +1,6 @@
 #' Fit a lagr model
 #' @export
-lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, N=1, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson')) {
+lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson')) {
 
     #If the data was provided as a spatial data frame, then extract both the data and the coordinates.
     if (is(data, "Spatial")) {
@@ -85,7 +85,6 @@ lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuni
                                     coords=coords,
                                     oracle=oracle,
                                     fit.loc=fit.loc,
-                                    N=N,
                                     D=D,
                                     longlat=longlat,
                                     varselect.method=varselect.method,
