@@ -22,5 +22,5 @@
 #'   1-25. \url{http://www.jstatsoft.org/v40/i03/}.
 #' @import SGL foreach
 #' @docType package
-#' @name lager
+#' @name lagr
 NULL

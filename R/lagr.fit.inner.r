@@ -170,6 +170,10 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         coefs["(Intercept)",] = coef.vec["(Intercept)"]
         coefs[raw.names,] = coef.vec[raw.names]
     }
+    
+    #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
+    nonzero = raw.names[unique(vargroup[vars[[k]]])]
+    nonzero = nonzero[nonzero!="(Intercept)"]
   
     if (tuning) {
         return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=raw.names[unique(vargroup[vars[[k]]])], weightsum=sumw, loss=loss))
