@@ -9,12 +9,14 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     }
   
     #Use oracular variable selection if specified
-    orig.names = colnames(x)
+    orig.names = c("(Intercept)", colnames(x))
     if (!is.null(oracle)) {
         x = matrix(x[,oracle], nrow=nrow(x), ncol=length(oracle))
         colnames(x) = oracle
     }
-
+    x = cbind(matrix(1, ncol=1, nrow=nrow(x)), x)
+    colnames(x)[1] = "(Intercept)"
+    
     #Establish groups for the group lasso
     vargroup = 1:ncol(x)
 
@@ -32,9 +34,9 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         interacted[,2*k] = x[,k]*(coords[,2]-loc[[2]])
         vargroup = c(vargroup, vargroup[k], vargroup[k])
     }
-
-    x.interacted = cbind(x, interacted)
-    colnames(x.interacted) = c(raw.names, interact.names)
+    x.interacted = cbind(x[,-1], interacted)
+    colnames(x.interacted) = c(raw.names[-1], interact.names)
+    vargroup = vargroup[-1]
 
     #Combine prior weights and kernel weights
     w <- prior.weights * kernel.weights
@@ -53,7 +55,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
 
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
-        model = SGL(data=list(x=xxx, y=yyy), weights=w, index=vargroup, maxit=100, standardize=FALSE, alpha=0, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, adaptive=TRUE)
+        model = SGL(data=list(x=xxx, y=yyy), weights=w, index=vargroup, maxit=100, standardize=FALSE, alpha=0, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, adaptive=TRUE, unpenalized=1)
 
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
