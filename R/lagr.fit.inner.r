@@ -176,12 +176,12 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     nonzero = nonzero[nonzero!="(Intercept)"]
   
     if (tuning) {
-        return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=raw.names[unique(vargroup[vars[[k]]])], weightsum=sumw, loss=loss))
+        return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=nonzero, weightsum=sumw, loss=loss))
     } else if (predict) {
-        return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, sigma2=s2, nonzero=raw.names[unique(vargroup[vars[[k]]])]))
+        return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, sigma2=s2, nonzero=nonzero))
     } else if (simulation) {
-        return(list(tunelist=tunelist, coef=coefs, s=k, sigma2=s2, fitted=localfit, nonzero=raw.names[unique(vargroup[vars[[k]]])], actual=yyy[colocated], weightsum=sumw, loss=loss))
+        return(list(tunelist=tunelist, coef=coefs, s=k, sigma2=s2, fitted=localfit, nonzero=nonzero, actual=yyy[colocated], weightsum=sumw, loss=loss))
     } else {
-        return(list(model=model, loss=loss, coef=coefs, nonzero=raw.names[unique(vargroup[vars[[k]]])], s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, fitted=localfit, weightsum=sumw))
+        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, fitted=localfit, weightsum=sumw))
     }
 }
