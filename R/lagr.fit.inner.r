@@ -64,7 +64,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         vars = list(1:ncol(xxx))
         varset = vars[[1]]
         df = ncol(xxx) + 2 #Add one for the scale parameter and one for the intercept
-
+        
         fitted = model$fitted
         localfit = fitted[colocated]
         s2 = summary(model)$dispersion
@@ -154,7 +154,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         loss.local = c(Inf)   
         localfit = meany
     }
-
+    
     #Get the coefficients:
     if (is.null(oracle)) {
         coefs = t(rbind(model[['intercept']], model[['beta']]))[k,]
@@ -163,7 +163,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         coefs = coefs[raw.names,]
     }
     else {
-        coefs = Matrix(0, ncol=1, nrow=length(orig.names)+1)
+        coefs = Matrix(0, ncol=1, nrow=length(orig.names))
         rownames(coefs) = orig.names
 
         coef.vec = coef(model)
