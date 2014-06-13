@@ -160,14 +160,14 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         coefs = t(rbind(model[['intercept']], model[['beta']]))[k,]
         coefs = Matrix(coefs, ncol=1)
         rownames(coefs) = c("(Intercept)", colnames(xxx))
-        coefs = coefs[c("(Intercept)", raw.names),]
+        coefs = coefs[raw.names,]
     }
     else {
         coefs = Matrix(0, ncol=1, nrow=length(orig.names)+1)
-        rownames(coefs) = c("(Intercept)", orig.names)
+        rownames(coefs) = orig.names
 
         coef.vec = coef(model)
-        coefs["(Intercept)",] = coef.vec["(Intercept)"]
+        #coefs["(Intercept)",] = coef.vec["(Intercept)"]
         coefs[raw.names,] = coef.vec[raw.names]
     }
     
