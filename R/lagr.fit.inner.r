@@ -63,7 +63,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         model = glm(yyy~xxx, weights=w, family=family)
         vars = list(1:ncol(xxx))
         varset = vars[[1]]
-        df = ncol(xxx) + 1
+        df = ncol(xxx) + 2 #Add one for the scale parameter and one for the intercept
 
         fitted = model$fitted
         localfit = fitted[colocated]
