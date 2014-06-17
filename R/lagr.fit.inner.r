@@ -20,7 +20,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     #Establish groups for the group lasso
     vargroup = 1:ncol(x)
 
-    #Compute the covariate-by-location interactions
+    #This is the naming system for the covariate-by-location interaction variables.
     raw.names = colnames(x)
     interact.names = vector()
     for (l in 1:length(raw.names)) {
@@ -28,12 +28,15 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         interact.names = c(interact.names, paste(raw.names[l], ":", colnames(coords)[2], sep=""))
     }
 
+    #Compute the covariate-by-location interactions
     interacted = matrix(0, ncol=2*ncol(x), nrow=nrow(x))
     for (k in 1:ncol(x)) {
         interacted[,2*(k-1)+1] = x[,k]*(coords[,1]-loc[[1]])
         interacted[,2*k] = x[,k]*(coords[,2]-loc[[2]])
         vargroup = c(vargroup, vargroup[k], vargroup[k])
     }
+
+    #Remove the intercept column, leaving its interactions with location.
     x.interacted = cbind(x[,-1], interacted)
     colnames(x.interacted) = c(raw.names[-1], interact.names)
     vargroup = vargroup[-1]
@@ -163,12 +166,9 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         coefs = coefs[raw.names,]
     }
     else {
-        coefs = Matrix(0, ncol=1, nrow=length(orig.names))
-        rownames(coefs) = orig.names
-
-        coef.vec = coef(model)
-        #coefs["(Intercept)",] = coef.vec["(Intercept)"]
-        coefs[raw.names,] = coef.vec[raw.names]
+        coefs = rep(0, length(orig.names))
+        names(coefs) = orig.names
+        coefs[raw.names] = coef(model)[1:(length(oracle)+1)]
     }
     
     #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
