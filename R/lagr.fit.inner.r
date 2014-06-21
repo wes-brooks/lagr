@@ -35,17 +35,14 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         interacted[,2*k] = x[,k]*(coords[,2]-loc[[2]])
         vargroup = c(vargroup, vargroup[k], vargroup[k])
     }
-
-    #Remove the intercept column, leaving its interactions with location.
-    x.interacted = cbind(x[,-1], interacted)
-    colnames(x.interacted) = c(raw.names[-1], interact.names)
-    vargroup = vargroup[-1]
+    x.interacted = cbind(x, interacted)
+    colnames(x.interacted) = c(raw.names, interact.names)
 
     #Combine prior weights and kernel weights
     w <- prior.weights * kernel.weights
     weighted = which(w>0)
     n.weighted = length(weighted)
-  
+    
     #Limit our attention to the observations with nonzero weight
     xxx = as.matrix(x.interacted[weighted,])
     yyy = as.matrix(y[weighted])
@@ -63,7 +60,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
     } else {
-        model = glm(yyy~xxx, weights=w, family=family)
+        model = glm(yyy~xxx-1, weights=w, family=family)
         vars = list(1:ncol(xxx))
         varset = vars[[1]]
         df = ncol(xxx) + 2 #Add one for the scale parameter and one for the intercept
@@ -160,9 +157,8 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     
     #Get the coefficients:
     if (is.null(oracle)) {
-        coefs = t(rbind(model[['intercept']], model[['beta']]))[k,]
-        coefs = Matrix(coefs, ncol=1)
-        rownames(coefs) = c("(Intercept)", colnames(xxx))
+        coefs = Matrix(drop(model[['beta']][,k]))
+        rownames(coefs) = colnames(xxx)
         coefs = coefs[raw.names,]
     }
     else {
