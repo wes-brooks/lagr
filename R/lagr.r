@@ -1,6 +1,26 @@
 #' Fit a lagr model
+#'
+#' \code{lagr} fits a model via local, adaptive, grouped regularization.
+#'
+#' This method fits a local model at each location indicated by \code{fit.loc}.
+#'
+#' @param formula A formula object describing the response and the predictor variables.
+#' @param data A data frame containing the model-building data
+#' @param family The exponential family (or Cox model) distribution of the response.
+#' @param weights Prior weights on the observations. These aren't the kernel weights - those will be calculated internally.
+#' @param coords The coordinates of theobservation locations. Rows of \code{coords} must align with rows of \code{data}.
+#' @param fit.loc (optional) You can specify the locations to fit the local models via \code{fit.loc}. Otherwise, the locations in \code{coords} will be used.
+#' @param longlat Are the coordinates provided in longitude and latitude? Default is \code{FALSE}.
+#' @param kernel The kernel function to use for locally weighting observations.
+#' @param bw The bandwidth to use with the kernel.
+#' @param bw.type The type of bandwidth. \code{dist} means the bandwidth is a distance, \code{knn} means it is a proportion of the \code{n}, and \code{nen} means it is a proportion of the global-model sum of squared residuals.
+#' @param varselect.method What criterion to minimize during variable selection. Options are \code{AIC}, \code{BIC}, \code{AICc}, and \code{GCV}.
+#' @param resid.type What kind of residuals to use. Options are \code{pearson} and \code{deviance}.
+#' 
+#' @return models A list containing the local models.
+#' 
 #' @export
-lagr <- function(formula, data, family, weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson')) {
+lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox'), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson')) {
 
     #If the data was provided as a spatial data frame, then extract both the data and the coordinates.
     if (is(data, "Spatial")) {

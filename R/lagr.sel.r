@@ -1,4 +1,28 @@
 #' Estimate the bandwidth parameter for a lagr model
+#'
+#' \code{lagr.sel} estimates the bandwidth parameter for a LAGR model.
+#'
+#' This method calls \code{lagr} repeatedly via the \code{optimize} function, searching for the bandwidth that minimizes a bandwidth selection criterion. It returns the profiled value of the selection criterion at each bandwidth that is used in the evaluation.
+#'
+#' @param formula A formula object describing the response and the predictor variables.
+#' @param data A data frame containing the model-building data
+#' @param family The exponential family (or Cox model) distribution of the response.
+#' @param range The allowable range of the bandwidth parameter.
+#' @param weights Prior weights on the observations. These aren't the kernel weights - those will be calculated internally.
+#' @param coords The coordinates of theobservation locations. Rows of \code{coords} must align with rows of \code{data}.
+#' @param longlat Are the coordinates provided in longitude and latitude? Default is \code{FALSE}.
+#' @param kernel The kernel function to use for locally weighting observations.
+#' @param bw The bandwidth to use with the kernel.
+#' @param bw.type The type of bandwidth. \code{dist} means the bandwidth is a distance, \code{knn} means it is a proportion of the \code{n}, and \code{nen} means it is a proportion of the global-model sum of squared residuals.
+#' @param varselect.method What criterion to minimize during variable selection. Options are \code{AIC}, \code{BIC}, \code{AICc}, and \code{GCV}.
+#' @param bwselect.method The name of the bandwidth selection criterion (options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}).
+#' @param resid.type What kind of residuals to use. Options are \code{pearson} and \code{deviance}.
+#' @param tol.loc The allowable error tolerance when converting an adaptive bandwidth (\code{knn} or \code{nen}) to a distance for each local model.
+#' @param tol.bw The allowable error tolerance when finding the bandwidth that minimizes the bandwidth selection criterion.
+#' 
+#' @return bw The value of bandwidth that minimizes the nbandwidth selection criterion.
+#' @return trace A data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
+#' 
 #' @export
 lagr.sel = function(formula, data=list(), family, range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson')) {
   if (is.null(longlat) || !is.logical(longlat)) 

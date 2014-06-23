@@ -99,14 +99,6 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
 
         return(m)
     }
-
-    lagr.object[['models']] = models
-
-    if (tuning) { }
-    else if (predict) { }
-    else if (simulation) { }
-    else {lagr.object[['coords']] = coords}
-
-    class(lagr.object) = 'lagr.object'
-    return(lagr.object)
+    
+    return(models)
 }
