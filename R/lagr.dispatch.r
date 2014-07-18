@@ -19,7 +19,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
         total.weight = sum(max.weights * prior.weights)
     }
 
-    models = foreach(i=1:n, .packages=c('SGL'), .errorhandling='pass') %dopar% {
+    models = foreach(i=1:n, .errorhandling='pass') %dopar% {
         if (!is.null(fit.loc)) {
             dist = drop(D[nrow(coords)+i,1:nrow(coords)])
         } else { dist = drop(D[i,]) }

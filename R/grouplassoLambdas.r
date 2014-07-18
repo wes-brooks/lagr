@@ -1,4 +1,4 @@
-betterPathCalc <- function(data, index, weights, adaweights, min.frac=0.05, nlam=20, type="linear") {
+grouplassoLambdas <- function(data, index, weights, adaweights, min.frac=0.05, nlam=20, type="linear") {
     reset <- 10
     step <- 1
     gamma <- 0.8

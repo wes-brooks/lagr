@@ -1,9 +1,7 @@
 #' Do the local adaptive grouped regularization
-#' @export 
-SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, verbose=FALSE, step=1, reset=10, lambdas=NULL, unpenalized=NULL) {
+grouplasso <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, verbose=FALSE, momentum=1, reset=10, lambda=NULL, unpenalized=NULL) {
     X.transform <- NULL
     if (is.null(weights)) {weights = rep(1,nrow(data$x))}
-    
     
     X = data$x
     Y = data$y
@@ -38,7 +36,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
     data = list(x=X, y=Y.centered)
     
     if (type == "linear") {
-        Sol <- oneDim(data,
+        Sol <- grouplassoRun(data,
                       index,
                       weights,
                       adaweights=adaweights,
@@ -48,10 +46,10 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
                       outer.thresh=thresh,
                       min.frac=min.frac,
                       nlam=nlam,
-                      lambdas=lambdas,
+                      lambda=lambda,
                       gamma=gamma,
                       verbose=verbose,
-                      step=step,
+                      momentum=momentum,
                       reset=reset)
         
         res = list()
@@ -67,7 +65,7 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
         
         #Calculate the degrees of freedom used in estimating the coefficients.
         #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
-        not.zip = matrix(0, nrow=0, ncol=length(lambdas))
+        not.zip = matrix(0, nrow=0, ncol=length(lambda))
         group.df = matrix(0, nrow=0, ncol=ncol(beta))
         
         groups = unique(index)
@@ -86,19 +84,9 @@ SGL <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.0
         res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
         res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
         
-        Sol <- list(beta=Sol$beta, lambdas=Sol$lambdas, type=type, intercept=intercept, X.transform=X.transform, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
+        Sol <- list(beta=Sol$beta, lambda=Sol$lambda, type=type, intercept=intercept, X.transform=X.transform, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
     }
     
-    if (type == "logit") {
-        Sol <- oneDimLogit(data, index, thresh = thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, alpha = alpha, reset = reset)
-        Sol <- list(beta = Sol$beta, lambdas = Sol$lambdas, type = type, intercept = Sol$intercept, X.transform = X.transform)
-    }
-    
-    if (type == "cox") {
-        Sol <- oneDimCox(data, index, thresh = thresh, inner.iter = maxit, outer.iter = maxit, outer.thresh = thresh, min.frac = min.frac, nlam = nlam, lambdas = lambdas, gamma = gamma, verbose = verbose, step = step, alpha = alpha, reset = reset)
-        Sol = list(beta = Sol$beta, lambdas = Sol$lambdas, type = type, X.transform = X.transform)
-    }
-    
-    class(Sol) = "SGL"
+    class(Sol) = "grouplasso"
     return(Sol)
 }
