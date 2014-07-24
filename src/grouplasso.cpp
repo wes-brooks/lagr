@@ -9,6 +9,7 @@ using namespace std;
 
 
 //////////////////////////////////
+// [[Rcpp::export]]
 void identityLinkCpp(NumericVector eta, NumericVector expect)
 {
     for (int i=0; i<eta.size(); i++)
@@ -24,6 +25,13 @@ XPtr<funcPtr> Identity()
     return(XPtr<funcPtr>(new funcPtr(&identityLinkCpp)));
 }
 
+
+// [[Rcpp::export]]
+double linLogLik(NumericVector expect, NumericVector y, NumericVector w)
+{
+    double squareSum = 0.5 * sum(w*pow(expect - y, 2));
+    return squareSum / sum(w);
+}
 
 
 //This function returns the weighted mean of the difference between eta and y
@@ -42,7 +50,7 @@ double rcppLinNegLogLikelihoodCalc(NumericVector expect, NumericVector y, Numeri
 }
 
 
-void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, int nrow, int ncol, int numGroup, NumericMatrix beta, XPtr<funcPtr> link, XPtr<funcPtr> variance, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, int innerIter, double thresh, NumericVector ldot, NumericVector nullBeta, double gamma, NumericVector eta, IntegerVector betaIsZero, int& groupChange, IntegerVector isActive, IntegerVector useGroup, double momentum, int reset)
+void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, int nrow, int ncol, int numGroup, NumericMatrix beta, Function link, Function loglik, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, int innerIter, double thresh, NumericVector ldot, NumericVector nullBeta, double gamma, NumericVector eta, IntegerVector betaIsZero, int& groupChange, IntegerVector isActive, IntegerVector useGroup, double momentum, int reset)
 {
     NumericVector theta(ncol);
     int startInd = 0;
@@ -62,8 +70,8 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
     NumericVector expect(nrow);
     NumericVector var(nrow);
     
-    funcPtr varianceFunction = *variance;
-    funcPtr linkFunction = *link;
+    //funcPtr varianceFunction = *variance;
+    //funcPtr linkFunction = *link;
     
     for(int i = 0; i < numGroup; i++)
     {
@@ -82,7 +90,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             
             // Calculating Null Gradient
-            linkFunction(etaNull, expect);
+            link(etaNull, expect);
             rcppLinGradCalc(expect, y, w, ldot);
             
             NumericVector grad(groupLen[i]);
@@ -94,7 +102,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     grad[j] = grad[j] + X[k + nrow * (j + rangeGroupInd[i])] * ldot[k];
                 }
             }
-                        
+            
             zeroCheck = sum(pow(grad,2));
             
             if(zeroCheck <= pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i])  //Or not?
@@ -141,7 +149,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 {
                     count++;
                     
-                    linkFunction(eta, expect);
+                    link(eta, expect);
                     rcppLinGradCalc(expect, y, w, ldot);
                     
                     for(int j = 0; j < groupLen[i]; j++)
@@ -155,8 +163,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     
                     diff = -1;
                     
-                    linkFunction(eta, expect);
-                    Lold = rcppLinNegLogLikelihoodCalc(expect, y, w);
+                    link(eta, expect);
+                    Lold = as<double>(loglik(expect, y, w));
+                    //Lold = rcppLinNegLogLikelihoodCalc(expect, y, w);
                     
                     // Back-tracking
                     while(diff < 0)
@@ -195,12 +204,13 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                             }
                         }
                         
-                        linkFunction(etaNew, expect);
-                        Lnew = rcppLinNegLogLikelihoodCalc(expect, y, w);
+                        link(etaNew, expect);
+                        Lnew = as<double>(loglik(expect, y, w));
+                        //Lnew = rcppLinNegLogLikelihoodCalc(expect, y, w);
                         
                         sqNormG = sum(pow(G, 2));
                         iProd = sum(grad * G);
-                                            
+                        
                         diff = Lold - Lnew - t * iProd + t/2 * sqNormG;
                         
                         t = t * gamma;
@@ -233,72 +243,75 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
 
 
 // [[Rcpp::export]]
-int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, SEXP link, SEXP variance, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset)
+int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function link, Function loglik, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset)
 {
     NumericVector prob(nrow);
     NumericVector nullBeta(ncol);
     int n = nrow;
     int p = ncol;
     NumericVector ldot(n);
-    int groupChange = 1;
     IntegerVector isActive(numGroup);
     IntegerVector useGroup(numGroup);
     IntegerVector tempIsActive(numGroup);
+    int nlam = lambda.size();
     
-    for(int i=0; i<numGroup; i++)
+    for (int step=0; step<nlam; step++)
     {
-        isActive[i] = 0;
-        useGroup[i] = 1;
-    }
-    
-    //Copy the most recent betas into position
-    if (step>0)
-    {
-        int l = step - 1;
-        
-        for (int i=0; i<ncol; i++)
+        for(int i=0; i<numGroup; i++)
         {
-            beta[step*ncol + i] = beta[l*ncol + i];
+            isActive[i] = 0;
+            useGroup[i] = 1;
         }
-    }
-    
-    //Resolve pointers to the link and variance functions:
-    XPtr<funcPtr> linkFunction(link);
-    XPtr<funcPtr> varianceFunction(variance);
-    
-    // outer most loop creating response etc...
-    int outermostCounter = 0;
-    double outermostCheck = 100000;
-    NumericVector outerOldBeta(p);
-    
-    while(groupChange == 1)
-    {
-        groupChange = 0;
         
-        rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkFunction, varianceFunction, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, momentum, reset);
-        
-        while(outermostCounter < outerIter && outermostCheck > outerThresh)
+        //Copy the most recent betas into position
+        if (step>0)
         {
-            outermostCounter ++;
-            for(int i=0; i<p; i++)
-            {
-                outerOldBeta[i] = beta[step*ncol + i];
-            }
+            int l = step - 1;
             
-            for(int i=0; i<numGroup; i++)
+            for (int i=0; i<ncol; i++)
             {
-                tempIsActive[i] = isActive[i];
-            }
-            
-            rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkFunction, varianceFunction, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, momentum, reset);
-            
-            outermostCheck = 0;
-            for(int i=0; i<p; i++)
-            {
-                outermostCheck = outermostCheck + fabs(outerOldBeta[i] - beta[step*ncol + i]);
+                beta[step*ncol + i] = beta[l*ncol + i];
             }
         }
+        
+        //Resolve pointers to the link and variance functions:
+        //XPtr<funcPtr> linkFunction(link);
+        //XPtr<funcPtr> varianceFunction(variance);
+        
+        // outer most loop creating response etc...
+        int outermostCounter = 0;
+        double outermostCheck = 100000;
+        NumericVector outerOldBeta(p);
+        int groupChange = 1;
+            
+        while(groupChange == 1)
+        {
+            groupChange = 0;
+            
+            rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, link, loglik, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, momentum, reset);
+            
+            while(outermostCounter < outerIter && outermostCheck > outerThresh)
+            {
+                outermostCounter ++;
+                for(int i=0; i<p; i++)
+                {
+                    outerOldBeta[i] = beta[step*ncol + i];
+                }
+                
+                for(int i=0; i<numGroup; i++)
+                {
+                    tempIsActive[i] = isActive[i];
+                }
+                
+                rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, link, loglik, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, momentum, reset);
+                
+                outermostCheck = 0;
+                for(int i=0; i<p; i++)
+                {
+                    outermostCheck = outermostCheck + fabs(outerOldBeta[i] - beta[step*ncol + i]);
+                }
+            }
+        }
     }
-    
     return 1;
 }
