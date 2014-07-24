@@ -5,6 +5,6 @@ Version: 0.2
 Author: Wesley Brooks <brooks.wesley@gmail.com>
 Maintainer: Wesley Brooks <brooks.wesley@gmail.com>
 License: MIT
-SystemRequirements: C++
-LinkingTo: Rcpp
+SystemRequirements: C++11
+LinkingTo: Rcpp11
 Depends: R (>= 3.1.0), Matrix, foreach
