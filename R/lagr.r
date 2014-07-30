@@ -55,6 +55,7 @@ lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox
     
     #Extract the model matrix and the response using the formula and the data:
     mf <- match.call(expand.dots = FALSE)
+print(names(mf))
     m <- match(c("formula", "data"), names(mf), 0)
     mf <- mf[c(1, m)]
     mf$drop.unused.levels <- TRUE

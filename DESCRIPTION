@@ -8,3 +8,5 @@ License: MIT
 SystemRequirements: C++11
 LinkingTo: Rcpp11
 Depends: R (>= 3.1.1), Matrix, foreach
+Suggests: testthat, knitr
+VignetteBuilder: knitr
