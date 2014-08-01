@@ -1,4 +1,22 @@
-#' Do the local adaptive grouped regularization
+#' Do the local adaptive grouped regularization step.
+#' 
+#' @param data list containing \code{x}, a matrix of local covariates, and \code{y}, the corresponding vector of observed responses
+#' @param index vector indicating the group membership of each column of the covariate vector
+#' @param weights vector of observation weights
+#' @param type "linear" causes us to estimate a local linear regression, "logit" causes us to estimate a local logistic regression
+#' @param maxit maximum iterations to run blockwise coordinate descent
+#' @param thresh iterate blockwise coordinate descent until the norm of the coefficient vector changes by less than this threshold
+#' @param min.frac ratio between the smallest and largest lambdas (lasso tuning parameters)
+#' @param nlam number of different lambdas (lasso tuning parameters) at which to fit the coefficients
+#' @param delta exponent of the unpenalized group coefficient norm in the adaptive penalty weight
+#' @param gamma 
+#' @param verbose print detailed information about model fitting?
+#' @param momentum Nesterov momentum
+#' @param reset 
+#' @param lambda vector of prespecified lasso tuning parameters - leave NULL to have the lambdas calculated automatically.
+#' @param unpenalized index of any unpenalized groups
+#' 
+#' @return a list containing the coefficients, tuning parameters, AIC/AICc/BIC/GCV values, degrees of freedom, fitted values, and residuals
 grouplasso <- function(data, index, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, verbose=FALSE, momentum=1, reset=10, lambda=NULL, unpenalized=NULL) {
     X.transform <- NULL
     if (is.null(weights)) {weights = rep(1,nrow(data$x))}
@@ -73,7 +91,6 @@ grouplasso <- function(data, index, weights=NULL, type="linear", maxit=1000, thr
             indx = which(index == groups[i])
             adaweight = adaweights[i]
             
-            #group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) / adaweight, 0)))
             group.df = rbind(group.df, apply(beta, 2, function(b) ifelse(!all(b[indx]==0), 1 + (length(indx)-1) * sqrt(sum(b[indx]**2)) * adaweight, 0)))
         }
         

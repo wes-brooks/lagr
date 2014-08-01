@@ -1,12 +1,18 @@
 Package: lagr
 Title: Local adaptive grouped regularization
-Description: Implements local adaptive grouped regularization for local variable selection in varying coefficient models
+Description: Implements local adaptive grouped regularization for local
+    variable selection in varying coefficient models
 Version: 0.2
 Author: Wesley Brooks <brooks.wesley@gmail.com>
 Maintainer: Wesley Brooks <brooks.wesley@gmail.com>
 License: MIT
 SystemRequirements: C++11
-LinkingTo: Rcpp11
-Depends: R (>= 3.1.0), Matrix, foreach
-Suggests: testthat, knitr
+LinkingTo: Rcpp11 (>= 3.1.1)
+Depends:
+    R (>= 3.1.1),
+    Matrix,
+    foreach
+Suggests:
+    testthat,
+    knitr
 VignetteBuilder: knitr

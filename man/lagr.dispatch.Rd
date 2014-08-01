@@ -1,23 +1,15 @@
-\name{lagr}
-\alias{lagr}
-\title{Fit a model via local, adaptive grouped regularization}
+\name{lagr.dispatch}
+\alias{lagr.dispatch}
+\title{Dispatch the fitting of local models to parallel cores, if registered}
 \usage{
-lagr(formula, data, family = c("gaussian", "binomial", "poisson", "Cox"),
-  weights = NULL, coords, fit.loc = NULL, tuning = FALSE,
-  predict = FALSE, simulation = FALSE, oracle = NULL, kernel, bw = NULL,
-  varselect.method = c("AIC", "BIC", "AICc"), verbose = FALSE, longlat,
-  tol.loc = NULL, bw.type = c("dist", "knn", "nen"), D = NULL,
-  resid.type = c("deviance", "pearson"))
+lagr.dispatch(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type,
+  verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel,
+  target, min.bw, max.bw, min.dist, max.dist, tol.loc, resid.type)
 }
 \arguments{
-  \item{formula}{symbolic representation of the model}
+  \item{x}{matrix of observed covariates}
 
-  \item{data}{data frame containing observations of all the
-  terms represented in the formula}
-
-  \item{weights}{vector of prior observation weights (due
-  to, e.g., overdispersion). Not related to the kernel
-  weights.}
+  \item{y}{vector of observed responses}
 
   \item{family}{exponential family distribution of the
   response}
@@ -67,11 +59,10 @@ lagr(formula, data, family = c("gaussian", "binomial", "poisson", "Cox"),
   \item{verbose}{print detailed information about our
   progress?}
 }
-\value{
-list containing the local models.
-}
 \description{
-\code{lagr} fits a LAGR model This method fits a local
-model at each location indicated by \code{fit.loc}.
+Loops through estimation locations with foreach, sending
+each local model to a core for fitting. If zero or one
+cores are registered, then foreach computes the local
+models sequentially.
 }
 

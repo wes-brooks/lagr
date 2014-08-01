@@ -1,41 +1,37 @@
-\name{lagr}
-\alias{lagr}
-\title{Fit a model via local, adaptive grouped regularization}
+\name{lagr.ssr}
+\alias{lagr.ssr}
+\title{Calculate the sum of squared residuals for a local model}
 \usage{
-lagr(formula, data, family = c("gaussian", "binomial", "poisson", "Cox"),
-  weights = NULL, coords, fit.loc = NULL, tuning = FALSE,
-  predict = FALSE, simulation = FALSE, oracle = NULL, kernel, bw = NULL,
-  varselect.method = c("AIC", "BIC", "AICc"), verbose = FALSE, longlat,
-  tol.loc = NULL, bw.type = c("dist", "knn", "nen"), D = NULL,
-  resid.type = c("deviance", "pearson"))
+lagr.ssr(bw, x, y, family, loc, coords, dist, kernel, target, varselect.method,
+  resid.type, prior.weights, oracle, verbose)
 }
 \arguments{
-  \item{formula}{symbolic representation of the model}
+  \item{bw}{kernel bandwidth (distance) to use for fitting
+  the local model}
 
-  \item{data}{data frame containing observations of all the
-  terms represented in the formula}
+  \item{x}{matrix of observed covariates}
 
-  \item{weights}{vector of prior observation weights (due
-  to, e.g., overdispersion). Not related to the kernel
-  weights.}
+  \item{y}{vector of observed responses}
 
   \item{family}{exponential family distribution of the
   response}
+
+  \item{loc}{location around which to center the kernel}
 
   \item{coords}{matrix of locations, with each row giving
   the location at which the corresponding row of data was
   observed}
 
-  \item{fit.loc}{matrix of locations where the local models
-  should be fitted}
+  \item{dist}{vector of distances from central location to
+  the observation locations}
+
+  \item{kernel}{kernel function for generating the local
+  observation weights}
 
   \item{longlat}{\code{TRUE} indicates that the coordinates
   are specified in longitude/latitude, \code{FALSE}
   indicates Cartesian coordinates. Default is
   \code{FALSE}.}
-
-  \item{kernel}{kernel function for generating the local
-  observation weights}
 
   \item{bw}{bandwidth parameter}
 
@@ -67,11 +63,10 @@ lagr(formula, data, family = c("gaussian", "binomial", "poisson", "Cox"),
   \item{verbose}{print detailed information about our
   progress?}
 }
-\value{
-list containing the local models.
-}
 \description{
-\code{lagr} fits a LAGR model This method fits a local
-model at each location indicated by \code{fit.loc}.
+This function fits a local LAGR model at \code{loc}, and
+returns its sum of squared residuals (SSR) as a proportion
+of the SSR from a global model. This proportion is how the
+bandwidth is specified under \code{nen}.
 }
 

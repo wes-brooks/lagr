@@ -10,66 +10,79 @@ lagr.tune(formula, data = list(), family, range = NULL, weights = NULL,
   "BICg"), resid.type = c("deviance", "pearson"))
 }
 \arguments{
-  \item{formula}{A formula object describing the response
-  and the predictor variables.}
+  \item{formula}{symbolic representation of the model}
 
-  \item{data}{A data frame containing the model-building
-  data}
+  \item{data}{data frame containing observations of all the
+  terms represented in the formula}
 
-  \item{family}{The exponential family (or Cox model)
-  distribution of the response.}
+  \item{weights}{vector of prior observation weights (due
+  to, e.g., overdispersion). Not related to the kernel
+  weights.}
 
-  \item{range}{The allowable range of the bandwidth
-  parameter.}
+  \item{family}{exponential family distribution of the
+  response}
 
-  \item{weights}{Prior weights on the observations. These
-  aren't the kernel weights - those will be calculated
-  internally.}
+  \item{coords}{matrix of locations, with each row giving
+  the location at which the corresponding row of data was
+  observed}
 
-  \item{coords}{The coordinates of theobservation
-  locations. Rows of \code{coords} must align with rows of
-  \code{data}.}
+  \item{fit.loc}{matrix of locations where the local models
+  should be fitted}
 
-  \item{longlat}{Are the coordinates provided in longitude
-  and latitude? Default is \code{FALSE}.}
+  \item{longlat}{\code{TRUE} indicates that the coordinates
+  are specified in longitude/latitude, \code{FALSE}
+  indicates Cartesian coordinates. Default is
+  \code{FALSE}.}
 
-  \item{kernel}{The kernel function to use for locally
-  weighting observations.}
+  \item{kernel}{kernel function for generating the local
+  observation weights}
 
-  \item{bw}{The bandwidth to use with the kernel.}
+  \item{bw}{bandwidth for the kernel}
 
-  \item{bw.type}{The type of bandwidth. \code{dist} means
-  the bandwidth is a distance, \code{knn} means it is a
-  proportion of the \code{n}, and \code{nen} means it is a
-  proportion of the global-model sum of squared residuals.}
+  \item{bw.type}{type of bandwidth - options are
+  \code{dist} for distance (the default), \code{knn} for
+  nearest neighbors (bandwidth a proportion of \code{n}),
+  and \code{nen} for nearest effective neighbors (bandwidth
+  a proportion of the sum of squared residuals from a
+  global model)}
 
-  \item{varselect.method}{What criterion to minimize during
-  variable selection. Options are \code{AIC}, \code{BIC},
-  \code{AICc}, and \code{GCV}.}
+  \item{bwselect.method}{criterion to minimize when tuning
+  bandwidth - options are \code{AICc}, \code{BICg}, and
+  \code{GCV}}
 
-  \item{bwselect.method}{The name of the bandwidth
-  selection criterion (options are \code{AIC}, \code{AICc},
-  \code{BIC}, \code{GCV}).}
+  \item{range}{allowable range of the bandwidth}
 
-  \item{resid.type}{What kind of residuals to use. Options
-  are \code{pearson} and \code{deviance}.}
+  \item{tol.bw}{global error tolerance for minimizing the
+  bandwidth selection criterion}
 
-  \item{tol.loc}{The allowable error tolerance when
-  converting an adaptive bandwidth (\code{knn} or
-  \code{nen}) to a distance for each local model.}
+  \item{tol.loc}{local error tolerance for converting an
+  adaptive bandwidth (e.g. \code{knn} or \code{nen}) to a
+  distance}
 
-  \item{tol.bw}{The allowable error tolerance when finding
-  the bandwidth that minimizes the bandwidth selection
-  criterion.}
+  \item{varselect.method}{criterion to minimize in the
+  regularization step of fitting local models - options are
+  \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}}
+
+  \item{resid.type}{type of residual to use (relevant for
+  non-gaussian response) - options are \code{deviance} and
+  \code{pearson}}
+
+  \item{tuning}{logical indicating whether this model will
+  be used to tune the bandwidth, in which case only the
+  tuning criteria are returned}
+
+  \item{a}{pre-specified matrix of distances between
+  locations}
+
+  \item{verbose}{print detailed information about our
+  progress?}
 }
 \value{
-bw The value of bandwidth that minimizes the nbandwidth
-selection criterion.
-
-trace A data frame of each bandwidth that was tried during
-the optimization, along with the resulting degrees of
-freedom used inthe LAGR model and the value of the
-bandwidth selection criterion.
+\code{list(bw, trace)} where \code{bw} minimizes the
+bandwidth selection criterion and trace is a data frame of
+each bandwidth that was tried during the optimization,
+along with the resulting degrees of freedom used inthe LAGR
+model and the value of the bandwidth selection criterion.
 }
 \description{
 \code{lagr.tune} estimates the bandwidth parameter for a

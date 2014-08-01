@@ -1,0 +1,20 @@
+\name{cubic}
+\alias{cubic}
+\title{The cubic kernel}
+\usage{
+cubic(d, bw)
+}
+\arguments{
+  \item{d}{vector of distances to convert to weights}
+
+  \item{bw}{bandwidth of the kernel}
+}
+\value{
+vector of kernel weights, given by \eqn{1 - (7 * (d / bw)^2
+- 8.75 * (d / bw)^3 + 3.5 * (d / bw)^5 - 0.75 * (d / bw)^7}
+if \eqn{d < bw}; otherwise 0
+}
+\description{
+The cubic kernel
+}
+

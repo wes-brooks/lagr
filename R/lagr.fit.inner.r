@@ -1,4 +1,26 @@
-#' Fit a LAGR model
+#' Fit a local model via the local adaptive group lasso
+#' 
+#' This function augments the covariates with local interactions, drops
+#' observations with zero weight, runs the adaptive grouped lasso, computes the
+#' residuals, and returns the necessary values for tuning or reporting.
+#' 
+#' @param x matrix of observed covariates
+#' @param y vector of observed responses
+#' @param loc location at which to fit a model
+#' @param family exponential family distribution of the response
+#' @param varselect.method criterion to minimize in the regularization step of
+#'   fitting local models - options are \code{AIC}, \code{AICc}, \code{BIC},
+#'   \code{GCV}
+#' @param tuning logical indicating whether this model will be used to tune the
+#'   bandwidth, in which case only the tuning criteria are returned
+#' @param kernel.weights vector of observation weights from the kernel
+#' @param prior.weights vector of prior observation weights provided by the user
+#' @param longlat \code{TRUE} indicates that the coordinates are specified in
+#'   longitude/latitude, \code{FALSE} indicates Cartesian coordinates. Default
+#'   is \code{FALSE}.
+#'   
+#' @return list of coefficients, nonzero coefficient identities, and tuning data
+#'   
 lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
     #Find which observations were made at the model location  
     colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))

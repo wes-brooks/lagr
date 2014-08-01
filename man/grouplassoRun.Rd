@@ -1,0 +1,14 @@
+\name{grouplassoRun}
+\alias{grouplassoRun}
+\title{Get the sequence of tuning parameters and then make the call to the C code that implements the adaptive group lasso}
+\usage{
+grouplassoRun(data, index, weights, adaweights, thresh = 1e-04, nlam = 20,
+  lambda = NULL, inner.iter = 100, outer.iter = 100,
+  outer.thresh = 1e-04, gamma = 0.8, momentum = 1, reset = 10,
+  min.frac = 0.05, verbose = FALSE)
+}
+\description{
+Get the sequence of tuning parameters and then make the
+call to the C code that implements the adaptive group lasso
+}
+

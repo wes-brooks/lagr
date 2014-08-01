@@ -4,24 +4,27 @@
 #'
 #' This method calls \code{lagr} repeatedly via the \code{optimize} function, searching for the bandwidth that minimizes a bandwidth selection criterion. It returns the profiled value of the selection criterion at each bandwidth that is used in the evaluation.
 #'
-#' @param formula A formula object describing the response and the predictor variables.
-#' @param data A data frame containing the model-building data
-#' @param family The exponential family (or Cox model) distribution of the response.
-#' @param range The allowable range of the bandwidth parameter.
-#' @param weights Prior weights on the observations. These aren't the kernel weights - those will be calculated internally.
-#' @param coords The coordinates of theobservation locations. Rows of \code{coords} must align with rows of \code{data}.
-#' @param longlat Are the coordinates provided in longitude and latitude? Default is \code{FALSE}.
-#' @param kernel The kernel function to use for locally weighting observations.
-#' @param bw The bandwidth to use with the kernel.
-#' @param bw.type The type of bandwidth. \code{dist} means the bandwidth is a distance, \code{knn} means it is a proportion of the \code{n}, and \code{nen} means it is a proportion of the global-model sum of squared residuals.
-#' @param varselect.method What criterion to minimize during variable selection. Options are \code{AIC}, \code{BIC}, \code{AICc}, and \code{GCV}.
-#' @param bwselect.method The name of the bandwidth selection criterion (options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}).
-#' @param resid.type What kind of residuals to use. Options are \code{pearson} and \code{deviance}.
-#' @param tol.loc The allowable error tolerance when converting an adaptive bandwidth (\code{knn} or \code{nen}) to a distance for each local model.
-#' @param tol.bw The allowable error tolerance when finding the bandwidth that minimizes the bandwidth selection criterion.
-#' 
-#' @return bw The value of bandwidth that minimizes the nbandwidth selection criterion.
-#' @return trace A data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
+#' @param formula symbolic representation of the model
+#' @param data data frame containing observations of all the terms represented in the formula
+#' @param weights vector of prior observation weights (due to, e.g., overdispersion). Not related to the kernel weights.
+#' @param family exponential family distribution of the response
+#' @param coords matrix of locations, with each row giving the location at which the corresponding row of data was observed
+#' @param fit.loc matrix of locations where the local models should be fitted
+#' @param longlat \code{TRUE} indicates that the coordinates are specified in longitude/latitude, \code{FALSE} indicates Cartesian coordinates. Default is \code{FALSE}.
+#' @param kernel kernel function for generating the local observation weights
+#' @param bw bandwidth for the kernel
+#' @param bw.type type of bandwidth - options are \code{dist} for distance (the default), \code{knn} for nearest neighbors (bandwidth a proportion of \code{n}), and \code{nen} for nearest effective neighbors (bandwidth a proportion of the sum of squared residuals from a global model)
+#' @param bwselect.method criterion to minimize when tuning bandwidth - options are \code{AICc}, \code{BICg}, and \code{GCV}
+#' @param range allowable range of the bandwidth
+#' @param tol.bw global error tolerance for minimizing the bandwidth selection criterion
+#' @param tol.loc local error tolerance for converting an adaptive bandwidth (e.g. \code{knn} or \code{nen}) to a distance
+#' @param varselect.method criterion to minimize in the regularization step of fitting local models - options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}
+#' @param resid.type type of residual to use (relevant for non-gaussian response) - options are \code{deviance} and \code{pearson}
+#' @param tuning logical indicating whether this model will be used to tune the bandwidth, in which case only the tuning criteria are returned
+#' @param a pre-specified matrix of distances between locations
+#' @param verbose print detailed information about our progress?
+#'
+#' @return \code{list(bw, trace)} where \code{bw} minimizes the bandwidth selection criterion and trace is a data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
 #' 
 #' @export
 lagr.tune = function(formula, data=list(), family, range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson')) {
@@ -79,11 +82,26 @@ lagr.tune = function(formula, data=list(), family, range=NULL, weights=NULL, coo
     
     #Create a new environment, in which we will store the likelihood trace from bandwidth selection.
     oo = new.env()
-    opt <- optimize(lagr.cv.f, interval=c(beta1, beta2), tol=tol.bw, maximum=FALSE,
-                    formula=formula, coords=coords, env=oo, oracle=oracle, family=family, varselect.method=varselect.method,
-                    kernel=kernel, verbose=verbose, longlat=longlat, data=data, bw.type=bw.type,
-                    weights=weights, tol.loc=tol.loc,
-                    resid.type=resid.type, bwselect.method=bwselect.method)
+    opt <- optimize(
+        lagr.tune.bw,
+        interval=c(beta1, beta2),
+        tol=tol.bw,
+        maximum=FALSE,
+        formula=formula,
+        coords=coords,
+        env=oo,
+        oracle=oracle,
+        family=family,
+        varselect.method=varselect.method,
+        kernel=kernel,
+        verbose=verbose, longlat=longlat,
+        data=data,
+        bw.type=bw.type,
+        weights=weights,
+        tol.loc=tol.loc,
+        resid.type=resid.type,
+        bwselect.method=bwselect.method
+    )
     trace = oo$trace[!duplicated(oo$trace[,1]),]
     rm(oo)
     

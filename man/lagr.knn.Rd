@@ -1,0 +1,41 @@
+\name{lagr.knn}
+\alias{lagr.knn}
+\title{Calculate the proportion of observations that lie within a given bandwidth}
+\usage{
+lagr.knn(bw, loc, coords, dist, kernel, target, prior.weights, total.weight,
+  verbose)
+}
+\arguments{
+  \item{bw}{bandwidth for which to compute \code{sum(w)}}
+
+  \item{loc}{location around which to center the kernel}
+
+  \item{coords}{matrix of observation locations}
+
+  \item{dist}{vector of distances from central location to
+  the observation locations}
+
+  \item{kernel}{kernel function for generating the local
+  observation weights}
+
+  \item{target}{targeted \code{knn} bandwidth}
+
+  \item{prior.weights}{vector of prior observation weights
+  provided by the user}
+
+  \item{total.weight}{sum of prior weights}
+
+  \item{verbose}{print detailed information about our
+  progress?}
+}
+\value{
+difference between the calculated \code{sum(w) /
+total.weight} and the target
+}
+\description{
+Facilitates a \code{knn}-type bandwidth by calculating the
+proportion \eqn{sum(w) / n}. Called repeatedly by
+\code{optimize} in \code{lagr.dispatch} to home in on the
+desired \code{knn}.
+}
+

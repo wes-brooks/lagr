@@ -1,3 +1,17 @@
+#' Compute the lambdas (adaptive group lasso tuning parameters) at which the local model will be fitted. 
+#' 
+#' Finds \code{lambda.max}, the smallest lambda that shrinks all the penalized groups to zero. The rest of the lambdas form a log-linear sequence from \code{lambda.max} to \code{lambda.min = min.frac*lambda.max}.
+#'
+#' @param data list consisting of \code{x}, a matrix of grouped lcoal covariates, and \code{y}, the vector of observed responses
+#' @param index vector indicating group membership for each column of \code{x}
+#' @param weights vector of observations weights
+#' @param adaweights vector of adaptive group penalty multipliers (computed from the unpenalized coefficients)
+#' @param min.frac ratio of \code{lambda.max} to \code{lambda.min}
+#' @param nlam how many lambdas to compute along the sequence from \code{lambda.max} to \code{lambda.min}
+#' @param type string indicating the kind of regression model, defaults to \code{"linear"}
+#' 
+#' @return vector of adaptive group lasso tuning parameters at which to compute the local LAGR coefficients
+#' 
 grouplassoLambdas <- function(data, index, weights, adaweights, min.frac=0.05, nlam=20, type="linear") {
     reset <- 10
     step <- 1

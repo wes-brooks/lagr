@@ -1,4 +1,23 @@
-lagr.cv.f = function(formula, data, weights, family, bw, coords, kernel, env, oracle, varselect.method, verbose, longlat, tol.loc, bw.type, bwselect.method, resid.type) {    
+#' Evaluate the bandwidth selection criterion for a given bandwidth
+#' 
+#' @param formula symbolic representation of the model
+#' @param data data frame containing observations of all the terms represented in the formula
+#' @param weights vector of prior observation weights (due to, e.g., overdispersion). Not related to the kernel weights.
+#' @param family exponential family distribution of the response
+#' @param bw bandwidth for the kernel
+#' @param kernel kernel function for generating the local observation weights
+#' @param coords matrix of locations, with each row giving the location at which the corresponding row of data was observed
+#' @param longlat \code{TRUE} indicates that the coordinates are specified in longitude/latitude, \code{FALSE} indicates Cartesian coordinates. Default is \code{FALSE}.
+#' @param varselect.method criterion to minimize in the regularization step of fitting local models - options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}
+#' @param tol.loc tolerance for the tuning of an adaptive bandwidth (e.g. \code{knn} or \code{nen})
+#' @param bw.type type of bandwidth - options are \code{dist} for distance (the default), \code{knn} for nearest neighbors (bandwidth a proportion of \code{n}), and \code{nen} for nearest effective neighbors (bandwidth a proportion of the sum of squared residuals from a global model)
+#' @param bwselect.method criterion to minimize when tuning bandwidth - options are \code{AICc}, \code{BICg}, and \code{GCV}
+#' @param resid.type type of residual to use (relevant for non-gaussian response) - options are \code{deviance} and \code{pearson}
+#' @param verbose print detailed information about our progress?
+#' 
+#' @return value of the \code{bwselect.method} criterion for the given bandwidth
+#' 
+lagr.tune.bw = function(formula, data, weights, family, bw, kernel, coords, longlat, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, resid.type, verbose) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
     lagr.model = lagr(formula=formula,

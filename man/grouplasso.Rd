@@ -1,13 +1,63 @@
 \name{grouplasso}
 \alias{grouplasso}
-\title{Do the local adaptive grouped regularization}
+\title{Do the local adaptive grouped regularization step.}
 \usage{
 grouplasso(data, index, weights = NULL, type = "linear", maxit = 1000,
   thresh = 0.001, min.frac = 0.1, nlam = 20, delta = 2, gamma = 0.8,
   verbose = FALSE, momentum = 1, reset = 10, lambda = NULL,
   unpenalized = NULL)
 }
+\arguments{
+  \item{data}{list containing \code{x}, a matrix of local
+  covariates, and \code{y}, the corresponding vector of
+  observed responses}
+
+  \item{index}{vector indicating the group membership of
+  each column of the covariate vector}
+
+  \item{weights}{vector of observation weights}
+
+  \item{type}{"linear" causes us to estimate a local linear
+  regression, "logit" causes us to estimate a local
+  logistic regression}
+
+  \item{maxit}{maximum iterations to run blockwise
+  coordinate descent}
+
+  \item{thresh}{iterate blockwise coordinate descent until
+  the norm of the coefficient vector changes by less than
+  this threshold}
+
+  \item{min.frac}{ratio between the smallest and largest
+  lambdas (lasso tuning parameters)}
+
+  \item{nlam}{number of different lambdas (lasso tuning
+  parameters) at which to fit the coefficients}
+
+  \item{delta}{exponent of the unpenalized group
+  coefficient norm in the adaptive penalty weight}
+
+  \item{gamma}{}
+
+  \item{verbose}{print detailed information about model
+  fitting?}
+
+  \item{momentum}{Nesterov momentum}
+
+  \item{reset}{}
+
+  \item{lambda}{vector of prespecified lasso tuning
+  parameters - leave NULL to have the lambdas calculated
+  automatically.}
+
+  \item{unpenalized}{index of any unpenalized groups}
+}
+\value{
+a list containing the coefficients, tuning parameters,
+AIC/AICc/BIC/GCV values, degrees of freedom, fitted values,
+and residuals
+}
 \description{
-Do the local adaptive grouped regularization
+Do the local adaptive grouped regularization step.
 }
 
