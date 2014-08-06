@@ -7,7 +7,6 @@
 #' @param family exponential family distribution of the response
 #' @param coords matrix of locations, with each row giving the location at which the corresponding row of data was observed
 #' @param fit.loc matrix of locations where the local models should be fitted
-#' @param longlat \code{TRUE} indicates that the coordinates are specified in longitude/latitude, \code{FALSE} indicates Cartesian coordinates. Default is \code{FALSE}.
 #' @param kernel kernel function for generating the local observation weights
 #' @param bw bandwidth parameter
 #' @param bw.type type of bandwidth - options are \code{dist} for distance (the default), \code{knn} for nearest neighbors (bandwidth a proportion of \code{n}), and \code{nen} for nearest effective neighbors (bandwidth a proportion of the sum of squared residuals from a global model)
@@ -18,7 +17,7 @@
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
 #' 
-lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, target, min.bw, max.bw, min.dist, max.dist, tol.loc, resid.type) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, resid.type) {
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
@@ -26,7 +25,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
     lagr.object = list()
 
     #For the adaptive bandwith methods, use a default tolerance if none is specified:
-    if (is.null(tol.loc)) {tol.loc = target / 1000}
+    if (is.null(tol.loc)) {tol.loc = bw / 1000}
 
     #The knn bandwidth is a proportion of the total prior weight, so compute the total prior weight:
     if (bw.type == 'knn') {
@@ -43,10 +42,10 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
         
         #Use a prespecified distance as the bandwidth?
         if (bw.type == 'dist') {
-            bandwidth = target
+            bandwidth = bw
             kernel.weights = drop(kernel(dist, bandwidth))
 
-        #Compute the bandwidth that sets the sum of weights around location i equal to target?
+        #Compute the bandwidth that sets the sum of weights around location i equal to bw?
         } else if (bw.type == 'knn') {
             opt = optimize(
                 lagr.knn,
@@ -61,12 +60,12 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
                 dist=dist,
                 total.weight=total.weight,
                 prior.weights=prior.weights,
-                target=target
+                target=bw
             )
             bandwidth = opt$minimum
             kernel.weights = drop(kernel(dist, bandwidth))
 
-        #Compute the bandwidth so that the sum of the local weighted squared error equals the target?
+        #Compute the bandwidth so that the sum of the local weighted squared error equals the bw?
         } else if (bw.type == 'nen') {
             opt = optimize(
                 lagr.ssr,
@@ -81,7 +80,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, longlat, oracle, D, bw.t
                 coords=coords,
                 dist=dist,
                 kernel=kernel,
-                target=target,
+                target=bw,
                 varselect.method=varselect.method,
                 resid.type=resid.type,
                 oracle=oracle,

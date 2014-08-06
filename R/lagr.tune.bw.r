@@ -17,7 +17,7 @@
 #' 
 #' @return value of the \code{bwselect.method} criterion for the given bandwidth
 #' 
-lagr.tune.bw = function(formula, data, weights, family, bw, kernel, coords, longlat, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, resid.type, verbose) {    
+lagr.tune.bw = function(formula, data, weights, family, bw, kernel, coords, longlat, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, resid.type, verbose, na.action) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
     lagr.model = lagr(formula=formula,
@@ -34,7 +34,8 @@ lagr.tune.bw = function(formula, data, weights, family, bw, kernel, coords, long
                       longlat=longlat,
                       bw.type=bw.type,
                       tol.loc=tol.loc,
-                      resid.type=resid.type)
+                      resid.type=resid.type,
+                      na.action=na.action)
     
     #Compute the loss at this bandwidth
     if (bwselect.method=='AICc') {

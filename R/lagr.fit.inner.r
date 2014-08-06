@@ -20,7 +20,8 @@
 #'   is \code{FALSE}.
 #'   
 #' @return list of coefficients, nonzero coefficient identities, and tuning data
-#'   
+#' @useDynLib lagr 
+#'    
 lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
     #Find which observations were made at the model location  
     colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))
@@ -31,17 +32,20 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     }
   
     #Use oracular variable selection if specified
-    orig.names = c("(Intercept)", colnames(x))
+    #orig.names = c("(Intercept)", colnames(x))
+    orig.names = colnames(x)
     if (!is.null(oracle)) {
         x = matrix(x[,oracle], nrow=nrow(x), ncol=length(oracle))
         colnames(x) = oracle
     }
-    x = cbind(matrix(1, ncol=1, nrow=nrow(x)), x)
-    colnames(x)[1] = "(Intercept)"
+    #x = cbind(matrix(1, ncol=1, nrow=nrow(x)), x)
+    #colnames(x)[1] = "(Intercept)"
     
-    #Establish groups for the group lasso
-    vargroup = 1:ncol(x)
-
+    #Establish groups for the group lasso and if there's an intercept, mark it as unpenalized
+    vargroup = attr(x, 'assign')
+    if (0 %in% vargroup)
+        unpen = 0
+        
     #This is the naming system for the covariate-by-location interaction variables.
     raw.names = colnames(x)
     interact.names = vector()
@@ -77,7 +81,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
 
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
-        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, maxit=100, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, unpenalized=1)
+        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, maxit=100, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, unpenalized=unpen)
 
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.

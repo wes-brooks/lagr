@@ -11,7 +11,8 @@ LinkingTo: Rcpp11 (>= 3.1.1)
 Depends:
     R (>= 3.1.1),
     Matrix,
-    foreach
+    foreach,
+    sp
 Suggests:
     testthat,
     knitr

@@ -27,31 +27,51 @@
 #' @return \code{list(bw, trace)} where \code{bw} minimizes the bandwidth selection criterion and trace is a data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
 #' 
 #' @export
-lagr.tune = function(formula, data=list(), family, range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson')) {
-    if (is.null(longlat) || !is.logical(longlat)) 
-        longlat <- FALSE
-    if (missing(coords)) 
-        stop("Observation coordinates have to be given")
+lagr.tune = function(formula, data, family=gaussian, range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+    #Coordinates could be supplied as a character vector or an expression
+    coords.is.char = FALSE
+    try(coords.is.char <- is.character(coords), silent=TRUE)
+    if (coords.is.char) vars = unlist(c("formula", "data", "weights", "na.action"), coords)
+    else vars = c("formula", "data", "weights", "na.action")
     
-    mf <- match.call(expand.dots = FALSE)
-    #m <- match(c("formula", "data", "weights"), names(mf), 0)
-    m <- match(c("formula", "data"), names(mf), 0)
+    #Extract terms from the function call into a model.frame
+    mf = match.call(expand.dots=FALSE)
+    m <- match(c("formula", "data", "weights", "na.action"), names(mf), 0)
     mf <- mf[c(1, m)]
-    mf$drop.unused.levels <- TRUE
     mf[[1]] <- as.name("model.frame")
-    mf <- eval(mf, parent.frame())
-    mt <- attr(mf, "terms")
-    dp.n <- length(model.extract(mf, "response"))
-    #weights <- as.vector(model.extract(mf, "weights"))
-    if (!is.null(weights) && !is.numeric(weights)) 
-        stop("'weights' must be a numeric vector")
-    if (is.null(weights)) 
-        weights <- rep(as.numeric(1), dp.n)
-    if (any(is.na(weights))) 
-        stop("NAs in weights")
-    if (any(weights < 0)) 
-        stop("negative weights")
-    y <- model.extract(mf, "response")
+    mf <- eval.parent(mf)
+    mt <- attr(mf, "terms") 
+    
+    #If the data was provided as a spatial data frame, then extract both the data and the coordinates.
+    if (is(data, "Spatial")) {
+        if (!missing(coords)) 
+            warning("data is Spatial* object, ignoring coords argument")
+        coords <- coordinates(data)
+        if ((is.null(longlat) || !is.logical(longlat)) && !is.na(is.projected(data)) && !is.projected(data))
+            longlat <- TRUE
+        else longlat <- FALSE
+    } else {
+        #Make sure coordinates were specified
+        if (missing(coords)) 
+            stop("Observation coordinates have to be given")
+        
+        #Get the coords from the data:
+        if (coords.is.char) coords = mf[,coords]
+        else {
+            coords.expression = substitute(coords)
+            coords.expression[[1]] = as.name('cbind')
+            coords = eval(coords.expression, data)
+        }
+        
+        #Only interpret the coordinates as latitude/longitude values if the longlat variable is TRUE
+        if (is.null(longlat) || !is.logical(longlat)) 
+            longlat <- FALSE
+    }
+    
+    #Get the data and the weights
+    y <- model.response(mf, "numeric")
+    x <- model.matrix(mt, mf, contrasts)
+    w <- model.weights(mf)
     
     bw.type = match.arg(bw.type)
     varselect.method = match.arg(varselect.method)
@@ -67,16 +87,17 @@ lagr.tune = function(formula, data=list(), family, range=NULL, weights=NULL, coo
             difmin <- spDistsN1(bbox, bbox[2, ], longlat)[1]
             if (any(!is.finite(difmin))) 
                 difmin[which(!is.finite(difmin))] <- 0
-            beta1 <- difmin/1000
-            beta2 <- 10*difmin
+            beta1 <- difmin / 1000
+            beta2 <- 10 * difmin
         } else if (bw.type == 'knn') {
             beta1 <- 0
             beta2 <- 1
         } else if (bw.type == 'nen') {
-            if (family=='binomial') {beta2 = sum(weights/(mean(y)*(1-mean(y))) * (y-mean(y))**2)}
-            else if (family=='poisson') {beta2 = sum(weights/(mean(y)) * (y-mean(y))**2)}
-            else if (family=='gaussian') {beta2 = sum(weights * (y-mean(y))**2)}
-            beta1 = beta2/1000
+            meany = mean(y)
+            if (family=='binomial') {beta2 = sum(w / (meany*(1-meany)) * (y-meany)**2)}
+            else if (family=='poisson') {beta2 = sum(w / meany * (y-meany)**2)}
+            else if (family=='gaussian') {beta2 = sum(w * (y-meany)**2)}
+            beta1 = beta2 / 1000
         }
     }
     
@@ -97,7 +118,7 @@ lagr.tune = function(formula, data=list(), family, range=NULL, weights=NULL, coo
         verbose=verbose, longlat=longlat,
         data=data,
         bw.type=bw.type,
-        weights=weights,
+        weights=w,
         tol.loc=tol.loc,
         resid.type=resid.type,
         bwselect.method=bwselect.method

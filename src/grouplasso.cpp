@@ -6,8 +6,6 @@
 using namespace Rcpp;
 using namespace std;
 
-
-
 //////////////////////////////////
 // [[Rcpp::export]]
 void identityLinkCpp(NumericVector eta, NumericVector expect)
