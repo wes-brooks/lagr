@@ -27,51 +27,21 @@
 #' @return \code{list(bw, trace)} where \code{bw} minimizes the bandwidth selection criterion and trace is a data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
 #' 
 #' @export
-lagr.tune = function(formula, data, family=gaussian, range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AICc','GCV','BICg'), resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
-    #Coordinates could be supplied as a character vector or an expression
-    coords.is.char = FALSE
-    try(coords.is.char <- is.character(coords), silent=TRUE)
-    if (coords.is.char) vars = unlist(c("formula", "data", "weights", "na.action"), coords)
-    else vars = c("formula", "data", "weights", "na.action")
+lagr.tune = function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox'), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BICg'), resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+    cl <- match.call()
+    formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
+    na.action = substitute(na.action)[1]
+    family = match.arg(family, c('gaussian', 'binomial', 'poisson', 'Cox'))
+    mf = eval(lagr.parse.model.frame(formula, data, weights, coords, NULL, longlat, na.action, contrasts))
     
-    #Extract terms from the function call into a model.frame
-    mf = match.call(expand.dots=FALSE)
-    m <- match(c("formula", "data", "weights", "na.action"), names(mf), 0)
-    mf <- mf[c(1, m)]
-    mf[[1]] <- as.name("model.frame")
-    mf <- eval.parent(mf)
-    mt <- attr(mf, "terms") 
-    
-    #If the data was provided as a spatial data frame, then extract both the data and the coordinates.
-    if (is(data, "Spatial")) {
-        if (!missing(coords)) 
-            warning("data is Spatial* object, ignoring coords argument")
-        coords <- coordinates(data)
-        if ((is.null(longlat) || !is.logical(longlat)) && !is.na(is.projected(data)) && !is.projected(data))
-            longlat <- TRUE
-        else longlat <- FALSE
-    } else {
-        #Make sure coordinates were specified
-        if (missing(coords)) 
-            stop("Observation coordinates have to be given")
-        
-        #Get the coords from the data:
-        if (coords.is.char) coords = mf[,coords]
-        else {
-            coords.expression = substitute(coords)
-            coords.expression[[1]] = as.name('cbind')
-            coords = eval(coords.expression, data)
-        }
-        
-        #Only interpret the coordinates as latitude/longitude values if the longlat variable is TRUE
-        if (is.null(longlat) || !is.logical(longlat)) 
-            longlat <- FALSE
-    }
-    
-    #Get the data and the weights
-    y <- model.response(mf, "numeric")
-    x <- model.matrix(mt, mf, contrasts)
-    w <- model.weights(mf)
+    y = mf$y
+    x = mf$x
+    w = mf$w
+    mt = mf$mt
+    coords = mf$coords
+    dist = mf$dist
+    max.dist = mf$max.dist
+    min.dist = mf$min.dist
     
     bw.type = match.arg(bw.type)
     varselect.method = match.arg(varselect.method)
@@ -83,12 +53,8 @@ lagr.tune = function(formula, data, family=gaussian, range=NULL, weights=NULL, c
         beta2 = max(range)
     } else {
         if (bw.type == "dist") {
-            bbox <- cbind(range(coords[, 1]), range(coords[, 2]))
-            difmin <- spDistsN1(bbox, bbox[2, ], longlat)[1]
-            if (any(!is.finite(difmin))) 
-                difmin[which(!is.finite(difmin))] <- 0
-            beta1 <- difmin / 1000
-            beta2 <- 10 * difmin
+            beta1 <- min.dist
+            beta2 <- max.dist
         } else if (bw.type == 'knn') {
             beta1 <- 0
             beta2 <- 1
@@ -108,18 +74,21 @@ lagr.tune = function(formula, data, family=gaussian, range=NULL, weights=NULL, c
         interval=c(beta1, beta2),
         tol=tol.bw,
         maximum=FALSE,
-        formula=formula,
+        x=x,
+        y=y,
         coords=coords,
+        dist=dist,
+        weights=w,
         env=oo,
         oracle=oracle,
         family=family,
         varselect.method=varselect.method,
         kernel=kernel,
-        verbose=verbose, longlat=longlat,
-        data=data,
+        verbose=verbose,
         bw.type=bw.type,
-        weights=w,
         tol.loc=tol.loc,
+        min.dist=min.dist,
+        max.dist=max.dist,
         resid.type=resid.type,
         bwselect.method=bwselect.method
     )

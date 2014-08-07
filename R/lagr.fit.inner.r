@@ -30,7 +30,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     if (sum(kernel.weights)==length(colocated)) {
         return(list('tunelist'=list('df-local'=1, 'ssr-loc'=list('pearson'=Inf, 'deviance'=Inf))))
     }
-  
+
     #Use oracular variable selection if specified
     #orig.names = c("(Intercept)", colnames(x))
     orig.names = colnames(x)
@@ -40,7 +40,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     }
     #x = cbind(matrix(1, ncol=1, nrow=nrow(x)), x)
     #colnames(x)[1] = "(Intercept)"
-    
+
     #Establish groups for the group lasso and if there's an intercept, mark it as unpenalized
     vargroup = attr(x, 'assign')
     if (0 %in% vargroup)
@@ -68,7 +68,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     w <- prior.weights * kernel.weights
     weighted = which(w>0)
     n.weighted = length(weighted)
-    
+
     #Limit our attention to the observations with nonzero weight
     xxx = as.matrix(x.interacted[weighted,])
     yyy = as.matrix(y[weighted])
@@ -204,6 +204,6 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     } else if (simulation) {
         return(list(tunelist=tunelist, coef=coefs, s=k, sigma2=s2, fitted=localfit, nonzero=nonzero, actual=yyy[colocated], weightsum=sumw, loss=loss))
     } else {
-        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, fitted=localfit, weightsum=sumw))
+        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, fitted=localfit, weightsum=sumw, tunelist=tunelist))
     }
 }

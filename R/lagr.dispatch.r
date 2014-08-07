@@ -21,7 +21,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
-
+    
     lagr.object = list()
 
     #For the adaptive bandwith methods, use a default tolerance if none is specified:
@@ -33,7 +33,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         max.weights = rep(1, length(prior.weights))
         total.weight = sum(max.weights * prior.weights)
     }
-
+    
     models = foreach(i=1:n, .errorhandling='pass') %dopar% {
         if (!is.null(fit.loc)) {
             dist = drop(D[nrow(coords)+i,1:nrow(coords)])
@@ -64,7 +64,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
             )
             bandwidth = opt$minimum
             kernel.weights = drop(kernel(dist, bandwidth))
-
+            
         #Compute the bandwidth so that the sum of the local weighted squared error equals the bw?
         } else if (bw.type == 'nen') {
             opt = optimize(
@@ -90,14 +90,14 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
             bandwidth = opt$minimum
             kernel.weights = drop(kernel(dist, bandwdth))
         }
-
+        
         #If we have specified covariates via an oracle, then use those
         if (!is.null(oracle)) {oracle.loc = oracle[[i]]}
         else {oracle.loc = NULL}
 
         #Fit the local model
         m = list(tunelist=list('ssr-loc'=list('pearson'=Inf, 'deviance'=Inf), 'df-local'=1), 'sigma2'=0, 'nonzero'=vector(), 'weightsum'=sum(kernel.weights))
-        try( m <- lagr.fit.inner(
+        try(m <- lagr.fit.inner(
             x=x,
             y=y,
             family=family,
@@ -115,7 +115,6 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         if (verbose) {
             cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; sigma2=", round(tail(m[['sigma2']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))
         }
-
         return(m)
     }
     

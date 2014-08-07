@@ -22,87 +22,26 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox'), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {    
-    #Coordinates could be supplied as a character vector or an expression
-    coords.is.char = FALSE
-    try(coords.is.char <- is.character(coords), silent=TRUE)
-    if (coords.is.char) vars = unlist(c("formula", "data", "weights", "na.action"), coords)
-    else vars = c("formula", "data", "weights", "na.action")
-    
-    #Parse the function call, extracting variables, weights, coordinates, and na.action.
-    mf = match.call(expand.dots=FALSE)
-    m <- match(c("formula", "data", "weights", "na.action"), names(mf), 0)
-    mf <- mf[c(1, m)]
-    mf[[1]] <- as.name("model.frame")
-    mf <- eval.parent(mf)
-    mt <- attr(mf, "terms") 
-    
-    #If the data was provided as a spatial data frame, then extract both the data and the coordinates.
-    if (is(data, "Spatial")) {
-        if (!missing(coords)) 
-            warning("data is Spatial* object, ignoring coords argument")
-        coords <- coordinates(data)
-        if ((is.null(longlat) || !is.logical(longlat)) && !is.na(is.projected(data)) && !is.projected(data))
-            longlat <- TRUE
-        else longlat <- FALSE
-    } else {
-        #Make sure coordinates were specified
-        if (missing(coords)) 
-            stop("Observation coordinates have to be given")
-        
-        #Get the coords from the data:
-        if (coords.is.char) coords = data[,coords]
-        else {
-            coords.expression = substitute(coords)
-            coords.expression[[1]] = as.name('cbind')
-            coords = eval(coords.expression, data)
-        }
-        
-        #Only interpret the coordinates as latitude/longitude values if the longlat variable is TRUE
-        if (is.null(longlat) || !is.logical(longlat)) 
-            longlat <- FALSE
-    }
-    
-    #Get the data and the weights
-    y <- model.response(mf, "numeric")
-    x <- model.matrix(mt, mf, contrasts)
-    w <- model.weights(mf)
-        
-    #Get the matrices of distances and weights
-    D.coords = rbind(coords, fit.loc)
-    if (is.null(D)) {
-        n = nrow(D.coords)
-        if (longlat) {
-            D = as.matrix(earth.dist(D.coords),n,n)
-        } else {
-            Xmat = matrix(rep(D.coords[,1], times=n), n, n)
-            Ymat = matrix(rep(D.coords[,2], times=n), n, n)
-            D = sqrt((Xmat-t(Xmat))**2 + (Ymat-t(Ymat))**2)
-        }
-    }
-    
-    #Check for problems with the (prior) weights
-    if (!is.null(w) && !is.numeric(w)) 
-        stop("'weights' must be a numeric vector")
-    if (is.null(w)) 
-        w <- rep(1, nrow(data))
-    if (any(is.na(w))) 
-        stop("NAs in weights")
-    if (any(w < 0)) 
-        stop("negative weights")
+lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox'), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+    cl <- match.call()
+    formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
+    na.action = substitute(na.action)[1]
+    family = match.arg(family, c('gaussian', 'binomial', 'poisson', 'Cox'))
+    mf = eval(lagr.parse.model.frame(formula, data, weights, coords, fit.loc, longlat, na.action, contrasts))
+
+    y = mf$y
+    x = mf$x
+    w = mf$w
+    mt = mf$mt
+    coords = mf$coords
+    dist = mf$dist
+    max.dist = mf$max.dist
+    min.dist = mf$min.dist
     
     #Set some variables that determine how we fit the model
     resid.type = match.arg(resid.type)
     bw.type = match.arg(bw.type)
     varselect.method = match.arg(varselect.method)
-    
-    #Find the possible range of bandwidths (for use with the adaptive bandwith methods - knn or nen)
-    bbox <- cbind(range(coords[, 1]), range(coords[, 2]))
-    difmin <- spDistsN1(bbox, bbox[2, ], longlat)[1]
-    if (any(!is.finite(difmin))) 
-        difmin[which(!is.finite(difmin))] <- 0
-    min.dist = difmin / 300
-    max.dist = 10 * difmin
     
     #Fit the model:
     res = list()
@@ -117,8 +56,7 @@ lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox
         coords=coords,
         oracle=oracle,
         fit.loc=fit.loc,
-        D=D,
-        longlat=longlat,
+        D=dist,
         varselect.method=varselect.method,
         verbose=verbose,
         bw=bw,

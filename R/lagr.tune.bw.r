@@ -17,36 +17,45 @@
 #' 
 #' @return value of the \code{bwselect.method} criterion for the given bandwidth
 #' 
-lagr.tune.bw = function(formula, data, weights, family, bw, kernel, coords, longlat, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, resid.type, verbose, na.action) {    
+lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, resid.type, verbose) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
-    lagr.model = lagr(formula=formula,
-                      data=data,
-                      family=family,
-                      weights=weights,
-                      tuning=TRUE,
-                      coords=coords,
-                      kernel=kernel,
-                      oracle=oracle,
-                      bw=bw,
-                      varselect.method=varselect.method,
-                      verbose=verbose,
-                      longlat=longlat,
-                      bw.type=bw.type,
-                      tol.loc=tol.loc,
-                      resid.type=resid.type,
-                      na.action=na.action)
+    
+    lagr.model = lagr.dispatch(
+        x=x,
+        y=y,
+        coords=coords,
+        fit.loc=NULL,
+        D=dist,
+        family=family,
+        prior.weights=weights,
+        tuning=TRUE,
+        predict=FALSE,
+        simulation=FALSE,
+        oracle=oracle,
+        varselect.method=varselect.method,
+        verbose=verbose,
+        bw=bw,
+        bw.type=bw.type,
+        kernel=kernel,
+        min.dist=min.dist,
+        max.dist=max.dist,
+        tol.loc=tol.loc,
+        resid.type=resid.type
+    )
     
     #Compute the loss at this bandwidth
     if (bwselect.method=='AICc') {
-        #trH = sum(sapply(lagr.model[['models']], function(x) {tail(x[['tunelist']][['trace.local']],1)}))
-        trH = sum(sapply(lagr.model[['models']], function(x) tail(x[['tunelist']][['df-local']],1)))
-        loss = nrow(data) * (log(mean(sapply(lagr.model[['models']], function(x) {x[['tunelist']][['ssr-loc']][[resid.type]]}))) + 1 + (2*(trH+1))/(nrow(data)-trH-2) + log(2*pi))
+        trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1)))
+        loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + (2*(trH+1)) / (nrow(x)-trH-2)
+    } else if (bwselect.method=='AIC') {
+        trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1)))
+        loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + 2*trH
     } else if (bwselect.method=='GCV') {
-        trH = sum(sapply(lagr.model[['models']], function(x) {tail(x[['tunelist']][['trace-local']],1)})) 
-        loss = sum(sapply(lagr.model[['models']], function(x) {x[['tunelist']][['ssr-loc']][[resid.type]]})) / (nrow(data)-trH)**2
+        trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['trace-local']],1))) 
+        loss = sum(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]])) / (nrow(x)-trH)**2
     } else if (bwselect.method=='BICg') {
-        trH = sum(sapply(lagr.model[['models']], function(x) {
+        trH = sum(sapply(lagr.model, function(x) {
             s2 = x[['tunelist']][['s2']]
             if (family=='gaussian') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]])/s2 + log(s2) }
             else if (family=='binomial') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) }
@@ -54,9 +63,9 @@ lagr.tune.bw = function(formula, data, weights, family, bw, kernel, coords, long
             df = x[['tunelist']][['df']]
             return(ll + log(x[['tunelist']][['n']]) * df / x[['tunelist']][['n']])
         }))
-        loss = trH + sum(sapply(lagr.model[['models']], function(x) {min(x[['tunelist']][['ssr-loc']][[resid.type]])}))
+        loss = trH + sum(sapply(lagr.model, function(x) min(x[['tunelist']][['ssr-loc']][[resid.type]])))
         #"Simplistic" BIC - based on eq4.22 from the Fotheringham et al. book:
-        #loss = nrow(data) * (log(mean(sapply(lagr.model[['models']], function(x) {x[['ssr.local']]}))) + 1 + log(2*pi)) + trH * log(nrow(data))/2
+        #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) {x[['ssr.local']]}))) + 1 + log(2*pi)) + trH * log(nrow(x))/2
     }
     
     res = mget('trace', env=env, ifnotfound=list(matrix(NA, nrow=0, ncol=3)))
