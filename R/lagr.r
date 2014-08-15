@@ -22,12 +22,11 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox'), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     na.action = substitute(na.action)[1]
-    family = match.arg(family, c('gaussian', 'binomial', 'poisson', 'Cox'))
-    mf = eval(lagr.parse.model.frame(formula, data, weights, coords, fit.loc, longlat, na.action, contrasts))
+    mf = eval(lagr.parse.model.frame(formula, data, family, weights, coords, fit.loc, longlat, na.action, contrasts))
 
     y = mf$y
     x = mf$x
@@ -37,6 +36,7 @@ lagr <- function(formula, data, family=c('gaussian', 'binomial', 'poisson', 'Cox
     dist = mf$dist
     max.dist = mf$max.dist
     min.dist = mf$min.dist
+    family = mf$family
     
     #Set some variables that determine how we fit the model
     resid.type = match.arg(resid.type)

@@ -45,6 +45,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     vargroup = attr(x, 'assign')
     if (0 %in% vargroup)
         unpen = 0
+    raw.vargroup = vargroup
         
     #This is the naming system for the covariate-by-location interaction variables.
     raw.names = colnames(x)
@@ -78,10 +79,10 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
 
     #Instantiate objects to store our output
     tunelist = list()
-
+    
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
-        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, maxit=100, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, unpenalized=unpen)
+        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, family=family, maxit=100, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, unpenalized=unpen)
 
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
@@ -136,35 +137,35 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         if (length(colocated)>0) {
             tunelist[['ssr-loc']] = list()
             tunelist[['ssr']] = list()
-    
+            
             #Pearson residuals:
-            if (family=='gaussian') {
+            if (family$family=='gaussian') {
                 tunelist[['ssr-loc']][['pearson']] = sum((w*(fitted - yyy)**2)[colocated])
                 tunelist[['ssr']][['pearson']] = sum(w*(fitted - yyy)**2)
-            } else if (family=='poisson') {
+            } else if (family$family=='poisson') {
                 tunelist[['ssr-loc']][['pearson']] = sum((w*(yyy - fitted)**2/fitted)[colocated])
                 tunelist[['ssr']][['pearson']] = sum(w*(fitted - yyy)**2/fitted)
-            } else if (family=='binomial') {
+            } else if (family$family=='binomial') {
                 tunelist[['ssr-loc']][['pearson']] = sum((w*(yyy - fitted)**2/(fitted*(1-fitted)))[colocated])
                 tunelist[['ssr']][['pearson']] = sum(w*(fitted - yyy)**2/(fitted*(1-fitted)))
             }
 
             #Deviance residuals:
-            if (family=='gaussian') {
+            if (family$family=='gaussian') {
                 tunelist[['ssr-loc']][['deviance']] = sum((w*(fitted - yyy)**2)[colocated])
                 tunelist[['ssr']][['deviance']] = sum(w*(fitted - yyy)**2)
-            } else if (family=='poisson') {
+            } else if (family$family=='poisson') {
                 tunelist[['ssr-loc']][['deviance']] = sum((2*w*(ylogy(yyy) - yyy*log(fitted) - (yyy-fitted)))[colocated])
                 tunelist[['ssr']][['deviance']] = sum(2*w*(ylogy(yyy) - yyy*log(fitted) - (yyy-fitted)))
-            } else if (family=='binomial') {
+            } else if (family$family=='binomial') {
                 tunelist[['ssr-loc']][['deviance']] = sum((2*w*(ylogy(yyy) - yyy*log(fitted) - ylogy(1-yyy) + (1-yyy)*log(1-fitted)))[colocated])
                 tunelist[['ssr']][['deviance']] = sum(2*w*(ylogy(yyy) - yyy*log(fitted) - ylogy(1-yyy) + (1-yyy)*log(1-fitted)))
             }
 
             #Compute the dispersion parameter:
-            if (family=='gaussian') { tunelist[['s2']] = s2 }
-            else if (family=='poisson') { tunelist[['s2']] = summary(m)$dispersion }
-            else if (family=='binomial') { tunelist[['s2']] = 1 }
+            if (family$family=='gaussian') { tunelist[['s2']] = s2 }
+            else if (family$family=='poisson') { tunelist[['s2']] = summary(m)$dispersion }
+            else if (family$family=='binomial') { tunelist[['s2']] = 1 }
     
             #Prepare some outputs for the bandwidth-finding scheme:
             tunelist[['n']] = sumw
@@ -194,8 +195,8 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     }
     
     #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
-    nonzero = raw.names[unique(vargroup[vars[[k]]])]
-    nonzero = nonzero[nonzero!="(Intercept)"]
+    nonzero = raw.names[which(raw.vargroup %in% unique(vargroup[vars[[k]]]))]
+    nonzero = nonzero[nonzero != "(Intercept)"]
   
     if (tuning) {
         return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=nonzero, weightsum=sumw, loss=loss))

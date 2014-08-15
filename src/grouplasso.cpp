@@ -33,7 +33,7 @@ double loglik(NumericVector eta, NumericVector y, NumericVector weights, Functio
     
     // Calculate the residuals r and weights w:
     NumericVector r = (y - mu) / mu_eta_val;
-    NumericVector sqrt_w = sqrt((weights * pow(mu_eta_val, 2)) / variance;
+    NumericVector sqrt_w = sqrt(weights * pow(mu_eta_val, 2) / variance);
     
     // Calculate the actual log likelihood:
     double ll = sum(pow(sqrt_w * r, 2));
@@ -41,20 +41,14 @@ double loglik(NumericVector eta, NumericVector y, NumericVector weights, Functio
 }
 
 
-double gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta)
+void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, NumericVector ldot)
 {
     // Compute some values we need for the logLik computation:
-    NumericVector mu_eta_val = mu_eta(eta);
     NumericVector mu = linkinv(eta);
-    NumericVector variance = varfun(mu);
-    
-    // Calculate the residuals r and weights w:
-    NumericVector r = (y - mu) / mu_eta_val;
-    NumericVector sqrt_w = sqrt((weights * pow(mu_eta_val, 2)) / variance;
+    double sumw = sum(weights);
     
     // Calculate the actual log likelihood:
-    double ll = sum(pow(sqrt_w * r, 2));
-    return(ll);
+    ldot = weights * (mu-y)/sumw;
 }
 
 
@@ -82,7 +76,7 @@ double rcppLinNegLogLikelihoodCalc(NumericVector expect, NumericVector y, Numeri
 }
 
 
-void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, int nrow, int ncol, int numGroup, NumericMatrix beta, Function link, Function loglik, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, int innerIter, double thresh, NumericVector ldot, NumericVector nullBeta, double gamma, NumericVector eta, IntegerVector betaIsZero, int& groupChange, IntegerVector isActive, IntegerVector useGroup, double momentum, int reset)
+void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, int nrow, int ncol, int numGroup, NumericMatrix beta, Function linkinv, Function mu_eta, Function varfun, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, int innerIter, double thresh, NumericVector ldot, NumericVector nullBeta, double gamma, NumericVector eta, IntegerVector betaIsZero, int& groupChange, IntegerVector isActive, IntegerVector useGroup, double momentum, int reset)
 {
     NumericVector theta(ncol);
     int startInd = 0;
@@ -99,7 +93,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
     double iProd = 0;
     NumericVector etaNew(nrow);
     NumericVector etaNull(nrow);
-    NumericVector expect(nrow);
+    //NumericVector expect(nrow);
     NumericVector var(nrow);
     
     //funcPtr varianceFunction = *variance;
@@ -122,8 +116,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             
             // Calculating Null Gradient
-            link(etaNull, expect);
-            rcppLinGradCalc(expect, y, w, ldot);
+            gradCalc(etaNull, y, w, linkinv, ldot);
             
             NumericVector grad(groupLen[i]);
             for(int j = 0; j < groupLen[i]; j++)
@@ -181,8 +174,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 {
                     count++;
                     
-                    link(eta, expect);
-                    rcppLinGradCalc(expect, y, w, ldot);
+                    //link(eta, expect);
+                    //rcppLinGradCalc(expect, y, w, ldot);
+                    gradCalc(eta, y, w, linkinv, ldot);
                     
                     for(int j = 0; j < groupLen[i]; j++)
                     {          
@@ -195,8 +189,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     
                     diff = -1;
                     
-                    link(eta, expect);
-                    Lold = as<double>(loglik(expect, y, w));
+                    Lold = loglik(eta, y, w, linkinv, varfun, mu_eta);
+                    //link(eta, expect);
+                    //Lold = as<double>(loglik(expect, y, w));
                     //Lold = rcppLinNegLogLikelihoodCalc(expect, y, w);
                     
                     // Back-tracking
@@ -236,8 +231,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                             }
                         }
                         
-                        link(etaNew, expect);
-                        Lnew = as<double>(loglik(expect, y, w));
+                        Lnew = loglik(etaNew, y, w, linkinv, varfun, mu_eta);
+                        //link(etaNew, expect);
+                        //Lnew = as<double>(loglik(expect, y, w));
                         //Lnew = rcppLinNegLogLikelihoodCalc(expect, y, w);
                         
                         sqNormG = sum(pow(G, 2));
@@ -275,7 +271,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
 
 
 // [[Rcpp::export]]
-int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function link, Function loglik, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset)
+int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function mu_eta, Function varfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset)
 {
     NumericVector prob(nrow);
     NumericVector nullBeta(ncol);
@@ -320,7 +316,7 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
         {
             groupChange = 0;
             
-            rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, link, loglik, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, momentum, reset);
+            rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkinv, mu_eta, varfun, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, momentum, reset);
             
             while(outermostCounter < outerIter && outermostCheck > outerThresh)
             {
@@ -335,7 +331,7 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
                     tempIsActive[i] = isActive[i];
                 }
                 
-                rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, link, loglik, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, momentum, reset);
+                rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkinv, mu_eta, varfun, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, momentum, reset);
                 
                 outermostCheck = 0;
                 for(int i=0; i<p; i++)

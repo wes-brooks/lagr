@@ -1,7 +1,16 @@
 #' This function takes input to the lagr or lagr.tune function, returning a model matrix, coordinates, weights, and response.
 #' 
 #' 
-lagr.parse.model.frame = function(formula, data, weights, coords, fit.loc, longlat, na.action, contrasts) {
+lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.loc, longlat, na.action, contrasts) {
+    # Get the exponential family of the response
+    if(is.character(family))
+        family <- get(family, mode = "function", envir = parent.frame())
+    if(is.function(family)) family <- family()
+    if(is.null(family$family)) {
+        print(family)
+        stop("'family' not recognized")
+    }
+    
     # Determine whether coords was supplied as a character vector or as a symbolic expression
     coords.is.char = FALSE
     try(coords.is.char <- is.character(coords), silent=TRUE)
@@ -82,5 +91,5 @@ lagr.parse.model.frame = function(formula, data, weights, coords, fit.loc, longl
     if (any(w < 0)) 
         stop("negative weights")
     
-    return(list(x=x, y=y, w=w, coords=coords, dist=D, max.dist=max.dist, min.dist=min.dist, mt=mt))
+    return(list(x=x, y=y, w=w, family=family, coords=coords, dist=D, max.dist=max.dist, min.dist=min.dist, mt=mt))
 }

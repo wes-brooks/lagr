@@ -13,6 +13,6 @@ linLogLik <- function(expect, y, w) {
     .Call('lagr_linLogLik', PACKAGE = 'lagr', expect, y, w)
 }
 
-rcppLinNest <- function(X, y, w, adaweights, link, loglik, nrow, ncol, numGroup, rangeGroupInd, groupLen, lambda, beta, innerIter, outerIter, thresh, outerThresh, eta, gamma, betaIsZero, momentum, reset) {
-    .Call('lagr_rcppLinNest', PACKAGE = 'lagr', X, y, w, adaweights, link, loglik, nrow, ncol, numGroup, rangeGroupInd, groupLen, lambda, beta, innerIter, outerIter, thresh, outerThresh, eta, gamma, betaIsZero, momentum, reset)
+rcppLinNest <- function(X, y, w, adaweights, linkinv, mu_eta, varfun, nrow, ncol, numGroup, rangeGroupInd, groupLen, lambda, beta, innerIter, outerIter, thresh, outerThresh, eta, gamma, betaIsZero, momentum, reset) {
+    .Call('lagr_rcppLinNest', PACKAGE = 'lagr', X, y, w, adaweights, linkinv, mu_eta, varfun, nrow, ncol, numGroup, rangeGroupInd, groupLen, lambda, beta, innerIter, outerIter, thresh, outerThresh, eta, gamma, betaIsZero, momentum, reset)
 }

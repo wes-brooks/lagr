@@ -53,8 +53,8 @@ END_RCPP
 }
 
 // rcppLinNest
-int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function link, Function loglik, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset);
-extern "C" SEXP lagr_rcppLinNest(SEXP XSEXP, SEXP ySEXP, SEXP wSEXP, SEXP adaweightsSEXP, SEXP linkSEXP, SEXP loglikSEXP, SEXP nrowSEXP, SEXP ncolSEXP, SEXP numGroupSEXP, SEXP rangeGroupIndSEXP, SEXP groupLenSEXP, SEXP lambdaSEXP, SEXP betaSEXP, SEXP innerIterSEXP, SEXP outerIterSEXP, SEXP threshSEXP, SEXP outerThreshSEXP, SEXP etaSEXP, SEXP gammaSEXP, SEXP betaIsZeroSEXP, SEXP momentumSEXP, SEXP resetSEXP) {
+int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function mu_eta, Function varfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset);
+extern "C" SEXP lagr_rcppLinNest(SEXP XSEXP, SEXP ySEXP, SEXP wSEXP, SEXP adaweightsSEXP, SEXP linkinvSEXP, SEXP mu_etaSEXP, SEXP varfunSEXP, SEXP nrowSEXP, SEXP ncolSEXP, SEXP numGroupSEXP, SEXP rangeGroupIndSEXP, SEXP groupLenSEXP, SEXP lambdaSEXP, SEXP betaSEXP, SEXP innerIterSEXP, SEXP outerIterSEXP, SEXP threshSEXP, SEXP outerThreshSEXP, SEXP etaSEXP, SEXP gammaSEXP, SEXP betaIsZeroSEXP, SEXP momentumSEXP, SEXP resetSEXP) {
 BEGIN_RCPP
     SEXP __sexp_result;
     {
@@ -63,8 +63,9 @@ BEGIN_RCPP
         InputParameter< NumericVector > y( ySEXP );
         InputParameter< NumericVector > w( wSEXP );
         InputParameter< NumericVector > adaweights( adaweightsSEXP );
-        InputParameter< Function > link( linkSEXP );
-        InputParameter< Function > loglik( loglikSEXP );
+        InputParameter< Function > linkinv( linkinvSEXP );
+        InputParameter< Function > mu_eta( mu_etaSEXP );
+        InputParameter< Function > varfun( varfunSEXP );
         InputParameter< int > nrow( nrowSEXP );
         InputParameter< int > ncol( ncolSEXP );
         InputParameter< int > numGroup( numGroupSEXP );
@@ -81,7 +82,7 @@ BEGIN_RCPP
         InputParameter< IntegerVector > betaIsZero( betaIsZeroSEXP );
         InputParameter< double > momentum( momentumSEXP );
         InputParameter< int > reset( resetSEXP );
-        int __result = rcppLinNest(X, y, w, adaweights, link, loglik, nrow, ncol, numGroup, rangeGroupInd, groupLen, lambda, beta, innerIter, outerIter, thresh, outerThresh, eta, gamma, betaIsZero, momentum, reset);
+        int __result = rcppLinNest(X, y, w, adaweights, linkinv, mu_eta, varfun, nrow, ncol, numGroup, rangeGroupInd, groupLen, lambda, beta, innerIter, outerIter, thresh, outerThresh, eta, gamma, betaIsZero, momentum, reset);
         PROTECT(__sexp_result = Rcpp::wrap(__result));
     }
     UNPROTECT(1);

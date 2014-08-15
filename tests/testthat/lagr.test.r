@@ -9,6 +9,6 @@ test_that("str_length is number of characters", {
     
     #LAGR model
     tune = lagr.tune(formula=f, data=df, coords=c(x,y), longlat=TRUE, varselect.method='AIC', kernel=epanechnikov, tol.bw=0.01, bw.type='knn', bwselect.method='AIC', verbose=TRUE)
-    model = lagr(formula=f, data=df, coords=c(x,y), longlat=TRUE, varselect.method='AIC', bw=tune$bw, kernel=epanechnikov, bw.type='knn', verbose=TRUE)
+    model = lagr(formula=f, data=df, coords=c('x','y'), longlat=TRUE, varselect.method='AIC', bw=0.2, kernel=epanechnikov, bw.type='knn', verbose=TRUE)
 })
 

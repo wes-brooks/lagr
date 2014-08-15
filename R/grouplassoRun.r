@@ -1,9 +1,9 @@
 #' Get the sequence of tuning parameters and then make the call to the C code that implements the adaptive group lasso
 #' 
 grouplassoRun <-
-    function(data, index, weights, adaweights, thresh=0.0001, nlam=20, lambda=NULL, inner.iter=100, outer.iter=100, outer.thresh=0.0001, gamma=0.8, momentum=1, reset=10, min.frac=0.05, verbose=FALSE) {
+    function(data, index, weights, adaweights, family, thresh=0.0001, nlam=20, lambda=NULL, inner.iter=100, outer.iter=100, outer.thresh=0.0001, gamma=0.8, momentum=1, reset=10, min.frac=0.05, verbose=FALSE) {
         if (is.null(lambda)) {
-            lambda <- grouplassoLambdas(data=data, index=index, weights=weights, min.frac=min.frac, nlam=nlam, type="linear", adaweights=adaweights)
+            lambda <- grouplassoLambdas(data=data, index=index, weights=weights, family=family, min.frac=min.frac, nlam=nlam, type="linear", adaweights=adaweights)
         }
         
         X <- data$x
@@ -54,8 +54,9 @@ grouplassoRun <-
         junk <- rcppLinNest(X = X,
                             y = y,
                             w = weights,
-                            link=identityLinkCpp,
-                            loglik=linLogLik,
+                            linkinv=family$linkinv,
+                            mu_eta=family$mu.eta,
+                            varfun=family$variance,
                             adaweights = adaweights,
                             nrow = n,
                             ncol = p,
