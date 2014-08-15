@@ -24,6 +24,40 @@ XPtr<funcPtr> Identity()
 }
 
 
+double loglik(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta)
+{
+    // Compute some values we need for the logLik computation:
+    NumericVector mu_eta_val = mu_eta(eta);
+    NumericVector mu = linkinv(eta);
+    NumericVector variance = varfun(mu);
+    
+    // Calculate the residuals r and weights w:
+    NumericVector r = (y - mu) / mu_eta_val;
+    NumericVector sqrt_w = sqrt((weights * pow(mu_eta_val, 2)) / variance;
+    
+    // Calculate the actual log likelihood:
+    double ll = sum(pow(sqrt_w * r, 2));
+    return(ll);
+}
+
+
+double gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta)
+{
+    // Compute some values we need for the logLik computation:
+    NumericVector mu_eta_val = mu_eta(eta);
+    NumericVector mu = linkinv(eta);
+    NumericVector variance = varfun(mu);
+    
+    // Calculate the residuals r and weights w:
+    NumericVector r = (y - mu) / mu_eta_val;
+    NumericVector sqrt_w = sqrt((weights * pow(mu_eta_val, 2)) / variance;
+    
+    // Calculate the actual log likelihood:
+    double ll = sum(pow(sqrt_w * r, 2));
+    return(ll);
+}
+
+
 // [[Rcpp::export]]
 double linLogLik(NumericVector expect, NumericVector y, NumericVector w)
 {
