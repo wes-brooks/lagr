@@ -17,16 +17,12 @@
 #' @param unpenalized index of any unpenalized groups
 #' 
 #' @return a list containing the coefficients, tuning parameters, AIC/AICc/BIC/GCV values, degrees of freedom, fitted values, and residuals
-grouplasso <- function(data, index, family, weights=NULL, type="linear", maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, verbose=FALSE, momentum=1, reset=10, lambda=NULL, unpenalized=NULL) {
+grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, verbose=FALSE, momentum=1, reset=10, lambda=NULL, unpenalized=NULL) {
     X.transform <- NULL
     if (is.null(weights)) {weights = rep(1,nrow(data$x))}
     
     X = data$x
     Y = data$y
-    
-    #Center the Y matrix:
-    wmeany = weighted.mean(as.vector(Y), weights)
-    Y.centered = Y - wmeany
     
     #Find the adaptive group weights:
     adamodel = glm.fit(y=as.matrix(Y), x=as.matrix(X), intercept=FALSE, weights=weights, family=family)
@@ -74,7 +70,6 @@ grouplasso <- function(data, index, family, weights=NULL, type="linear", maxit=1
     
     #Return the weighted mean to the intercept:
     beta = Sol$beta
-    beta[1,] = beta[1,] #+ wmeany
     intercept = beta[1,]
     Sol$beta = beta
     

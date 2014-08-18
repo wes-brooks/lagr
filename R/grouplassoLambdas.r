@@ -62,11 +62,22 @@ grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac
             ind <- groups[i]
             n.pen = length(ind)
             X.fit <- X[,c(which(index == ind), indx.unpen), drop=FALSE]
+            X.unpen <- X[, indx.unpen, drop=FALSE]
             
             m = glm.fit(y=y, x=X.fit, weights=weights, family=family, intercept=FALSE)
-            XtX = t(m$R) %*% m$R
-            cors = (XtX %*% m$coef / adaweights[i])[1:n.pen]
+            m2 = glm.fit(y=y, x=X.unpen, weights=weights, family=family, intercept=FALSE)
+            var = family$variance(m$fitted)
+            
+            XtWX = t(m$R) %*% m$R
+            #Works well for gaussian:
+            #cors = (XtWX %*% m$coef / adaweights[i])[1:n.pen]
+            
+            #Original (also worked well for gaussian:)
             #cors <- t(X.fit) %*% diag(weights) %*% resp / adaweights[i]
+            
+            #Maybe works for any family?
+            cors = (t(X.fit) %*% diag(weights) %*% (y-m2$fitted) / adaweights[i])[1:n.pen]
+
             lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
         }
     }

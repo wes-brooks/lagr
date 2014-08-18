@@ -38,8 +38,6 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         x = matrix(x[,oracle], nrow=nrow(x), ncol=length(oracle))
         colnames(x) = oracle
     }
-    #x = cbind(matrix(1, ncol=1, nrow=nrow(x)), x)
-    #colnames(x)[1] = "(Intercept)"
 
     #Establish groups for the group lasso and if there's an intercept, mark it as unpenalized
     vargroup = attr(x, 'assign')
