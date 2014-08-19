@@ -51,7 +51,7 @@ grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac
     for (i in 1:num.groups) {
         if (adaweights[i] > 0) {
             ind <- groups[i]
-            n.pen = length(ind)
+            n.pen = sum(index==ind)
             X.fit <- X[,c(which(index == ind), indx.unpen), drop=FALSE]
             X.unpen <- X[, indx.unpen, drop=FALSE]
             
