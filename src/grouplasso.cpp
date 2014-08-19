@@ -53,7 +53,7 @@ void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Functio
     double sumw = sum(weights);
     
     // Calculate the actual log likelihood:
-    ldot = weights * (y-mu) * dMu_dEta / variance / sumw;
+    ldot = weights * (mu-y) * dMu_dEta / variance / sumw;
 }
 
 

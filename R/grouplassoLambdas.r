@@ -12,19 +12,10 @@
 #' 
 #' @return vector of adaptive group lasso tuning parameters at which to compute the local LAGR coefficients
 #' 
-grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac=0.05, nlam=20, type="linear") {
-    reset <- 10
-    step <- 1
-    gamma <- 0.8
-    
-    inner.iter <- 1000
-    outer.iter <- 1000
-    thresh = 10^(-3)
-    outer.thresh = thresh
-    
-    n <- nrow(data$x)
+grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac=0.05, nlam=20, type="linear") {    
     X <- data$x
     y <- data$y
+
     n <- nrow(X)
     p <- ncol(X)
     
@@ -70,18 +61,18 @@ grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac
             
             XtWX = t(m$R) %*% m$R
             #Works well for gaussian:
-            #cors = (XtWX %*% m$coef / adaweights[i])[1:n.pen]
+            cors = (XtWX %*% m$coef / adaweights[i])[1:n.pen]
             
             #Original (also worked well for gaussian:)
             #cors <- t(X.fit) %*% diag(weights) %*% resp / adaweights[i]
             
             #Maybe works for any family?
-            cors = (t(X.fit) %*% diag(weights) %*% (y-m2$fitted) / adaweights[i])[1:n.pen]
+            #cors = (t(X.fit) %*% diag(weights) %*% (y-m2$fitted) / adaweights[i])[1:n.pen]
 
-            lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
-print(lambda.max)            
+            lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])        
         }
     }
+    print(lambda.max)    
     
     max.lam <- max(lambda.max) * 1.1 #The factor of 1.1 is to make sure the first lambda has only unpenalized covariates.
     min.lam <- min.frac * max.lam
