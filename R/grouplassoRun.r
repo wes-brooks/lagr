@@ -43,12 +43,7 @@ grouplassoRun <-
         ## DONE SETTING UP C STUFF ##
         
         nlam = length(lambda)
-        beta.old <- rep(0, ncol(X))
-        beta.is.zero <- rep(1, num.groups)
         beta <- matrix(0, nrow=ncol(X), ncol=nlam)
-        
-        beta.is.zero <- as.integer(rep(1, num.groups))
-        beta.old <- rep(0, ncol(X))
         eta <- rep(0,n)
         
         junk <- rcppLinNest(X = X,
@@ -71,7 +66,7 @@ grouplassoRun <-
                             outerThresh = outer.thresh,
                             eta = eta,
                             gamma = gamma,
-                            betaIsZero = beta.is.zero,
+                            betaIsZero = as.integer(rep(1, num.groups)),
                             momentum = momentum,
                             reset = reset
         )

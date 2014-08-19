@@ -79,6 +79,7 @@ grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac
             cors = (t(X.fit) %*% diag(weights) %*% (y-m2$fitted) / adaweights[i])[1:n.pen]
 
             lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])
+print(lambda.max)            
         }
     }
     

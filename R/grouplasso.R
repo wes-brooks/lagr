@@ -3,7 +3,6 @@
 #' @param data list containing \code{x}, a matrix of local covariates, and \code{y}, the corresponding vector of observed responses
 #' @param index vector indicating the group membership of each column of the covariate vector
 #' @param weights vector of observation weights
-#' @param type "linear" causes us to estimate a local linear regression, "logit" causes us to estimate a local logistic regression
 #' @param maxit maximum iterations to run blockwise coordinate descent
 #' @param thresh iterate blockwise coordinate descent until the norm of the coefficient vector changes by less than this threshold
 #' @param min.frac ratio between the smallest and largest lambdas (lasso tuning parameters)
@@ -96,7 +95,7 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     res[['AIC']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df
     res[['AICc']] = apply(resid, 2, function(x) sum(weights * x**2)) / s2 + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
     
-    Sol <- list(beta=Sol$beta, lambda=Sol$lambda, type=type, intercept=intercept, X.transform=X.transform, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
+    Sol <- list(beta=Sol$beta, lambda=Sol$lambda, intercept=intercept, X.transform=X.transform, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
     
     class(Sol) = "grouplasso"
     return(Sol)

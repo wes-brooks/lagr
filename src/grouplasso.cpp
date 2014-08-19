@@ -44,17 +44,16 @@ double loglik(NumericVector eta, NumericVector y, NumericVector weights, Functio
 }
 
 
-void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, NumericVector ldot)
+void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta, NumericVector ldot)
 {
-    // Coefficient estimates:
-    // solve(XtWX) %*% t(X) %*% diag(w) %*% diag(m$family$variance(m$fitted)) %*% z
-    
-    // Compute some values we need for the logLik computation:
+    // Compute some values we need for the gradient computation:
     NumericVector mu = linkinv(eta);
+    NumericVector variance = varfun(mu);
+    NumericVector dMu_dEta = mu_eta(eta);
     double sumw = sum(weights);
     
     // Calculate the actual log likelihood:
-    ldot = weights * (mu-y)/sumw;
+    ldot = weights * (y-mu) * dMu_dEta / variance / sumw;
 }
 
 
@@ -122,7 +121,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             
             // Calculating Null Gradient
-            gradCalc(etaNull, y, w, linkinv, ldot);
+            gradCalc(etaNull, y, w, linkinv, varfun, mu_eta, ldot);
             
             NumericVector grad(groupLen[i]);
             for(int j = 0; j < groupLen[i]; j++)
@@ -135,10 +134,10 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             
             zeroCheck = sum(pow(grad,2));
-cout << "i: " << i << "\n zeroCheck: " << zeroCheck << "\n adaweight^2: " << pow(adaweights[i],2) << "\n lambda^2: " << pow(lambda[step],2) << "\n groupLen: " << groupLen[i] << "\n compareTo: " << pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i] << "\n\n";  
+//cout << "i: " << i << "\n zeroCheck: " << zeroCheck << "\n adaweight^2: " << pow(adaweights[i],2) << "\n lambda^2: " << pow(lambda[step],2) << "\n groupLen: " << groupLen[i] << "\n compareTo: " << pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i] << "\n\n";  
             if(zeroCheck <= pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i])  //Or not?
             {
-cout << "Looks like group " << i << " is zero!\n";
+//cout << "Looks like group " << i << " is zero!\n";
                 if(betaIsZero[i] == 0)
                 {
                     for(int k = 0; k < nrow; k++)
@@ -157,7 +156,7 @@ cout << "Looks like group " << i << " is zero!\n";
             }
             else
             {
-cout << "Looks like group " << i << " is nonzero!\n";
+//cout << "Looks like group " << i << " is nonzero!\n";
                 if(isActive[i] == 0)
                 {
                     groupChange = 1;
@@ -184,7 +183,7 @@ cout << "Looks like group " << i << " is nonzero!\n";
                     
                     //link(eta, expect);
                     //rcppLinGradCalc(expect, y, w, ldot);
-                    gradCalc(eta, y, w, linkinv, ldot);
+                    gradCalc(eta, y, w, linkinv, varfun, mu_eta, ldot);
                     
                     for(int j = 0; j < groupLen[i]; j++)
                     {          
@@ -208,17 +207,17 @@ cout << "Looks like group " << i << " is nonzero!\n";
                         for(int j = 0; j < groupLen[i]; j++)
                         {
                             z[j] = beta[step*ncol + j + rangeGroupInd[i]] - t * grad[j];
-cout << "Group: " << i << ", var: " << j << ", z[j]: " << z[j] << "\n";
+//cout << "Group: " << i << ", var: " << j << ", z[j]: " << z[j] << "\n";
                         }
                         
                         norm = sum(pow(z, 2));
                         norm = sqrt(norm);
-cout << "Group: " << i << ", norm: " << norm << "\n";                        
+//cout << "Group: " << i << ", norm: " << norm << "\n";                        
                         if(norm != 0){
                             uOp = (1 - adaweights[i]*lambda[step]*sqrt(double(groupLen[i]))*t/norm);   //Or not?
                         }
                         else{uOp = 0;}
-cout << "Group: " << i << ", uOp: " << uOp << "\n";                           
+//cout << "Group: " << i << ", uOp: " << uOp << "\n";                           
                         if(uOp < 0)
                         {
                             uOp = 0;
@@ -228,7 +227,7 @@ cout << "Group: " << i << ", uOp: " << uOp << "\n";
                         {
                             U[j] = uOp*z[j];
                             G[j] = 1/t *(beta[step*ncol + j + rangeGroupInd[i]] - U[j]);
-cout << "Group: " << i << ", var: " << j << ", U[j]: " << U[j] << ", G[j]: " << G[j] << "\n";      
+//cout << "Group: " << i << ", var: " << j << ", U[j]: " << U[j] << ", G[j]: " << G[j] << "\n";      
                         }
                      
                         // Setting up betaNew and etaNew in direction of Grad for descent momentum
@@ -248,13 +247,13 @@ cout << "Group: " << i << ", var: " << j << ", U[j]: " << U[j] << ", G[j]: " << 
                         
                         sqNormG = sum(pow(G, 2));
                         iProd = sum(grad * G);
-                        
+cout << "Lold: " << Lold << ", Lnew: " << Lnew << ", t: " << t << ", iProd: " << iProd << "sqNormG: " << sqNormG << "\n";                              
                         diff = Lold - Lnew - t * iProd + t/2 * sqNormG;
                         
                         t = t * gamma;
                     }
                     t = t / gamma;
-cout << "t: " << t <<"\n";                    
+//cout << "t: " << t <<"\n";                    
                     check = 0;
                     
                     for(int j = 0; j < groupLen[i]; j++)
