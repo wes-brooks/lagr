@@ -2,8 +2,9 @@
 #' 
 grouplassoRun <-
     function(data, index, weights, adaweights, family, thresh=0.0001, nlam=20, lambda=NULL, inner.iter=100, outer.iter=100, outer.thresh=0.0001, gamma=0.8, momentum=1, reset=10, min.frac=0.05, verbose=FALSE) {
+        lambdaSeek <- grouplassoLambdas(data=data, index=index, weights=weights, family=family, min.frac=min.frac, nlam=nlam, type="linear", adaweights=adaweights)
         if (is.null(lambda)) {
-            lambda <- grouplassoLambdas(data=data, index=index, weights=weights, family=family, min.frac=min.frac, nlam=nlam, type="linear", adaweights=adaweights)
+            lambda = lambdaSeek$lambda
         }
         
         X <- data$x
@@ -43,8 +44,8 @@ grouplassoRun <-
         ## DONE SETTING UP C STUFF ##
         
         nlam = length(lambda)
-        beta <- matrix(0, nrow=ncol(X), ncol=nlam)
-        eta <- rep(0,n)
+        beta <- lambdaSeek$beta.unpen
+        eta <- lambdaSeek$eta.unpen
         
         junk <- rcppLinNest(X = X,
                             y = y,

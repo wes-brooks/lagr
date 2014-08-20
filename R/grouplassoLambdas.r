@@ -47,35 +47,37 @@ grouplassoLambdas <- function(data, index, family, weights, adaweights, min.frac
     unpen = groups[which(adaweights==0)]
     indx.unpen = which(index == unpen)
     n.unpen = length(indx.unpen)
-    
+    X.unpen = X[, indx.unpen, drop=FALSE]
+    m.unpen = glm.fit(y=y, x=X.unpen, weights=weights, family=family, intercept=FALSE)
+    eta.unpen = family$linkfun(m.unpen$fitted)
+    beta.unpen = matrix(0, nrow=ncol(X), ncol=nlam)
+    beta.unpen[indx.unpen,1] = coef(m.unpen)
+        
     for (i in 1:num.groups) {
         if (adaweights[i] > 0) {
             ind <- groups[i]
-            n.pen = sum(index==ind)
+            n.pen = group.length[i]
             X.fit <- X[,c(which(index == ind), indx.unpen), drop=FALSE]
-            X.unpen <- X[, indx.unpen, drop=FALSE]
             
             m = glm.fit(y=y, x=X.fit, weights=weights, family=family, intercept=FALSE)
-            m2 = glm.fit(y=y, x=X.unpen, weights=weights, family=family, intercept=FALSE)
-            var = family$variance(m$fitted)
+
             
             XtWX = t(m$R) %*% m$R
             #Works well for gaussian:
-            cors = (XtWX %*% m$coef / adaweights[i])[1:n.pen]
+            #cors = (XtWX %*% m$coef / adaweights[i])[1:n.pen]
             
             #Original (also worked well for gaussian:)
             #cors <- t(X.fit) %*% diag(weights) %*% resp / adaweights[i]
-            
-            #Maybe works for any family?
-            #cors = (t(X.fit) %*% diag(weights) %*% (y-m2$fitted) / adaweights[i])[1:n.pen]
 
-            lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(group.length[i])        
+            #Maybe works for any family?
+            cors = (t(X.fit) %*% diag(weights) %*% (y-m.unpen$fitted) / adaweights[i])[1:n.pen]
+
+            lambda.max[i] <- sqrt(sum(cors^2)) / sqrt(n.pen)        
         }
     }
-    print(lambda.max)    
     
     max.lam <- max(lambda.max) * 1.1 #The factor of 1.1 is to make sure the first lambda has only unpenalized covariates.
     min.lam <- min.frac * max.lam
     lambdas <- exp(seq(log(max.lam), log(min.lam), length.out=nlam))
-    return(lambdas/sum(weights))
+    return(list(lambdas=lambdas/sum(weights), eta.unpen=eta.unpen, beta.unpen=beta.unpen))
 }

@@ -48,13 +48,18 @@ void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Functio
 {
     // Compute some values we need for the gradient computation:
     NumericVector mu = linkinv(eta);
-    NumericVector variance = varfun(mu);
-    NumericVector dMu_dEta = mu_eta(eta);
+    /*NumericVector variance = varfun(mu);
+    NumericVector mu_eta_val = mu_eta(eta);
+    NumericVector w = weights * pow(mu_eta_val, 2) / variance;
+    NumericVector z = eta + (y - mu)/mu_eta_val;
+    */
     double sumw = sum(weights);
     
     // Calculate the actual log likelihood:
-    ldot = weights * (mu-y) * dMu_dEta / variance / sumw;
+    //ldot = w * (z-eta) / sumw;
+    ldot = weights * (mu-y) / sumw;
 }
+
 
 
 // [[Rcpp::export]]
@@ -134,10 +139,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             
             zeroCheck = sum(pow(grad,2));
-//cout << "i: " << i << "\n zeroCheck: " << zeroCheck << "\n adaweight^2: " << pow(adaweights[i],2) << "\n lambda^2: " << pow(lambda[step],2) << "\n groupLen: " << groupLen[i] << "\n compareTo: " << pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i] << "\n\n";  
+            
             if(zeroCheck <= pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i])  //Or not?
             {
-//cout << "Looks like group " << i << " is zero!\n";
                 if(betaIsZero[i] == 0)
                 {
                     for(int k = 0; k < nrow; k++)
@@ -156,7 +160,6 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             else
             {
-//cout << "Looks like group " << i << " is nonzero!\n";
                 if(isActive[i] == 0)
                 {
                     groupChange = 1;
@@ -181,8 +184,6 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 {
                     count++;
                     
-                    //link(eta, expect);
-                    //rcppLinGradCalc(expect, y, w, ldot);
                     gradCalc(eta, y, w, linkinv, varfun, mu_eta, ldot);
                     
                     for(int j = 0; j < groupLen[i]; j++)
@@ -194,12 +195,8 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         }
                     }
                     
-                    diff = -1;
-                    
+                    diff = -1;                    
                     Lold = loglik(eta, y, w, linkinv, varfun, mu_eta);
-                    //link(eta, expect);
-                    //Lold = as<double>(loglik(expect, y, w));
-                    //Lold = rcppLinNegLogLikelihoodCalc(expect, y, w);
                     
                     // Back-tracking
                     while(diff < 0)
@@ -207,17 +204,16 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         for(int j = 0; j < groupLen[i]; j++)
                         {
                             z[j] = beta[step*ncol + j + rangeGroupInd[i]] - t * grad[j];
-//cout << "Group: " << i << ", var: " << j << ", z[j]: " << z[j] << "\n";
                         }
                         
                         norm = sum(pow(z, 2));
                         norm = sqrt(norm);
-//cout << "Group: " << i << ", norm: " << norm << "\n";                        
+                        
                         if(norm != 0){
                             uOp = (1 - adaweights[i]*lambda[step]*sqrt(double(groupLen[i]))*t/norm);   //Or not?
                         }
                         else{uOp = 0;}
-//cout << "Group: " << i << ", uOp: " << uOp << "\n";                           
+                        
                         if(uOp < 0)
                         {
                             uOp = 0;
@@ -226,8 +222,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         for(int j = 0; j < groupLen[i]; j++)
                         {
                             U[j] = uOp*z[j];
-                            G[j] = 1/t *(beta[step*ncol + j + rangeGroupInd[i]] - U[j]);
-//cout << "Group: " << i << ", var: " << j << ", U[j]: " << U[j] << ", G[j]: " << G[j] << "\n";      
+                            G[j] = 1/t *(beta[step*ncol + j + rangeGroupInd[i]] - U[j]);    
                         }
                      
                         // Setting up betaNew and etaNew in direction of Grad for descent momentum
@@ -241,19 +236,16 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         }
                         
                         Lnew = loglik(etaNew, y, w, linkinv, varfun, mu_eta);
-                        //link(etaNew, expect);
-                        //Lnew = as<double>(loglik(expect, y, w));
-                        //Lnew = rcppLinNegLogLikelihoodCalc(expect, y, w);
                         
                         sqNormG = sum(pow(G, 2));
                         iProd = sum(grad * G);
-cout << "Lold: " << Lold << ", Lnew: " << Lnew << ", t: " << t << ", iProd: " << iProd << "sqNormG: " << sqNormG << "\n";                              
+                        
                         diff = Lold - Lnew - t * iProd + t/2 * sqNormG;
                         
                         t = t * gamma;
                     }
                     t = t / gamma;
-//cout << "t: " << t <<"\n";                    
+                    
                     check = 0;
                     
                     for(int j = 0; j < groupLen[i]; j++)
@@ -275,6 +267,7 @@ cout << "Lold: " << Lold << ", Lnew: " << Lnew << ", t: " << t << ", iProd: " <<
             }
         }
     }
+    cout << t << "\n";
 }
 
 
