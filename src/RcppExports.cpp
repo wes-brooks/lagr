@@ -4,54 +4,6 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-// identityLinkCpp
-void identityLinkCpp(NumericVector eta, NumericVector expect);
-extern "C" SEXP lagr_identityLinkCpp(SEXP etaSEXP, SEXP expectSEXP) {
-BEGIN_RCPP
-    {
-        Rcpp::RNGScope __rngScope;
-        InputParameter< NumericVector > eta( etaSEXP );
-        InputParameter< NumericVector > expect( expectSEXP );
-        identityLinkCpp(eta, expect);
-    }
-    return R_NilValue;
-END_RCPP
-}
-
-// Identity
-typedef void (*funcPtr)(NumericVector eta, NumericVector expect); XPtr<funcPtr> Identity();
-extern "C" SEXP lagr_Identity() {
-BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        
-        typedef void (*funcPtr)(NumericVector eta, NumericVector expect); XPtr<funcPtr> __result = Identity();
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
-END_RCPP
-}
-
-// linLogLik
-double linLogLik(NumericVector expect, NumericVector y, NumericVector w);
-extern "C" SEXP lagr_linLogLik(SEXP expectSEXP, SEXP ySEXP, SEXP wSEXP) {
-BEGIN_RCPP
-    SEXP __sexp_result;
-    {
-        Rcpp::RNGScope __rngScope;
-        InputParameter< NumericVector > expect( expectSEXP );
-        InputParameter< NumericVector > y( ySEXP );
-        InputParameter< NumericVector > w( wSEXP );
-        double __result = linLogLik(expect, y, w);
-        PROTECT(__sexp_result = Rcpp::wrap(__result));
-    }
-    UNPROTECT(1);
-    return __sexp_result;
-END_RCPP
-}
-
 // rcppLinNest
 int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function mu_eta, Function varfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset);
 extern "C" SEXP lagr_rcppLinNest(SEXP XSEXP, SEXP ySEXP, SEXP wSEXP, SEXP adaweightsSEXP, SEXP linkinvSEXP, SEXP mu_etaSEXP, SEXP varfunSEXP, SEXP nrowSEXP, SEXP ncolSEXP, SEXP numGroupSEXP, SEXP rangeGroupIndSEXP, SEXP groupLenSEXP, SEXP lambdaSEXP, SEXP betaSEXP, SEXP innerIterSEXP, SEXP outerIterSEXP, SEXP threshSEXP, SEXP outerThreshSEXP, SEXP etaSEXP, SEXP gammaSEXP, SEXP betaIsZeroSEXP, SEXP momentumSEXP, SEXP resetSEXP) {

@@ -6,40 +6,19 @@
 using namespace Rcpp;
 using namespace std;
 
-//////////////////////////////////
-// [[Rcpp::export]]
-void identityLinkCpp(NumericVector eta, NumericVector expect)
-{
-    for (int i=0; i<eta.size(); i++)
-    {
-        expect[i] = eta[i];
-    }
-}
-
-// [[Rcpp::export]]
-typedef void (*funcPtr)(NumericVector eta, NumericVector expect); 
-XPtr<funcPtr> Identity()
-{
-    return(XPtr<funcPtr>(new funcPtr(&identityLinkCpp)));
-}
-
 
 double loglik(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta)
 {
     // Compute some values we need for the logLik computation:
-    //NumericVector mu_eta_val = mu_eta(eta);
     NumericVector mu = linkinv(eta);
     NumericVector variance = varfun(mu);
     
     // Calculate the residuals r and weights w:
-    //NumericVector r = (y - mu) / mu_eta_val;
-    //NumericVector sqrt_w = sqrt(weights * pow(mu_eta_val, 2) / variance);
     NumericVector r2 = pow(y - mu, 2);
     NumericVector w = weights / variance;
     
     // Calculate the actual log likelihood:
-    //double ll = sum(pow(sqrt_w * r, 2));
-    double ll = sum(w * r2);
+    double ll = 0.5 * sum(w * r2) / sum(weights);
     return(ll);
 }
 
@@ -48,41 +27,10 @@ void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Functio
 {
     // Compute some values we need for the gradient computation:
     NumericVector mu = linkinv(eta);
-    /*NumericVector variance = varfun(mu);
-    NumericVector mu_eta_val = mu_eta(eta);
-    NumericVector w = weights * pow(mu_eta_val, 2) / variance;
-    NumericVector z = eta + (y - mu)/mu_eta_val;
-    */
     double sumw = sum(weights);
     
     // Calculate the actual log likelihood:
-    //ldot = w * (z-eta) / sumw;
     ldot = weights * (mu-y) / sumw;
-}
-
-
-
-// [[Rcpp::export]]
-double linLogLik(NumericVector expect, NumericVector y, NumericVector w)
-{
-    double squareSum = 0.5 * sum(w*pow(expect - y, 2));
-    return squareSum / sum(w);
-}
-
-
-//This function returns the weighted mean of the difference between eta and y
-void rcppLinGradCalc(NumericVector expect, NumericVector y, NumericVector w, NumericVector ldot)
-{
-    double sumw = sum(w);
-    ldot = w * (expect - y)/sumw;
-}
-
-
-//Returns the weighted sum of squared residuals.
-double rcppLinNegLogLikelihoodCalc(NumericVector expect, NumericVector y, NumericVector w)
-{
-    double squareSum = 0.5 * sum(w*pow(expect - y, 2));
-    return squareSum / sum(w);
 }
 
 
@@ -179,6 +127,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 
                 count = 0;
                 check = 100000;
+                t = momentum;
                 
                 while(count <= innerIter && check > thresh)
                 {
@@ -199,8 +148,11 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     Lold = loglik(eta, y, w, linkinv, varfun, mu_eta);
                     
                     // Back-tracking to optimize the step size for gradient descent:
+                    int optim_steps = 0;
                     while(diff < 0)
                     {
+                        optim_steps++;
+                        
                         for(int j = 0; j < groupLen[i]; j++)
                         {
                             z[j] = beta[step*ncol + j + rangeGroupInd[i]] - t * grad[j];
@@ -244,8 +196,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         
                         t = t * gamma;
                     }
-                    //t = t / gamma;
-                    t = momentum;
+                    t = t / gamma;
                     
                     check = 0;
                     
@@ -342,7 +293,10 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
                 {
                     outermostCheck = outermostCheck + fabs(outerOldBeta[i] - beta[step*ncol + i]);
                 }
+                outermostCheck = outermostCheck / abs(sum(outerOldBeta));
+                //cout << "Outer convergence check: step=" << step << "; iteration=" << outermostCounter << "; delta=" << outermostCheck << "; threshold=" << outerThresh << "\n";
             }
+            //cout << "It took " << outermostCounter << " outer iterations to converge on the coefs for step " << step << ".\n";
         }
     }
     return 1;
