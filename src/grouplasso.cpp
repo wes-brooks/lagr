@@ -99,7 +99,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
     double uOp = 0;
     double Lnew = 0;
     double Lold = 0;
-    double sqNormG = 0;
+    double sqNormDelta = 0;
     double iProd = 0;
     NumericVector etaNew(nrow);
     NumericVector etaNull(nrow);
@@ -174,7 +174,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 betaIsZero[i] = 0;
                 NumericVector z(groupLen[i]);
                 NumericVector U(groupLen[i]);
-                NumericVector G(groupLen[i]);
+                NumericVector delta(groupLen[i]);
                 NumericVector betaNew(ncol);
                 
                 count = 0;
@@ -198,7 +198,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     diff = -1;                    
                     Lold = loglik(eta, y, w, linkinv, varfun, mu_eta);
                     
-                    // Back-tracking
+                    // Back-tracking to optimize the step size for gradient descent:
                     while(diff < 0)
                     {
                         for(int j = 0; j < groupLen[i]; j++)
@@ -222,7 +222,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         for(int j = 0; j < groupLen[i]; j++)
                         {
                             U[j] = uOp*z[j];
-                            G[j] = 1/t *(beta[step*ncol + j + rangeGroupInd[i]] - U[j]);    
+                            delta[j] = U[j] - beta[step*ncol + j + rangeGroupInd[i]];    
                         }
                      
                         // Setting up betaNew and etaNew in direction of Grad for descent momentum
@@ -231,20 +231,21 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                             etaNew[k] = eta[k];
                             for(int j = 0; j < groupLen[i]; j++)
                             {
-                                etaNew[k] = etaNew[k] - t*G[j] * X[k + nrow*(rangeGroupInd[i] + j)];
+                                etaNew[k] = etaNew[k] + delta[j] * X[k + nrow*(rangeGroupInd[i] + j)];
                             }
                         }
                         
                         Lnew = loglik(etaNew, y, w, linkinv, varfun, mu_eta);
                         
-                        sqNormG = sum(pow(G, 2));
-                        iProd = sum(grad * G);
+                        sqNormDelta = sum(pow(delta, 2));
+                        iProd = sum(grad * delta);
                         
-                        diff = Lold - Lnew - t * iProd + t/2 * sqNormG;
+                        diff = Lold - Lnew + iProd + 0.5/t * sqNormDelta;
                         
                         t = t * gamma;
                     }
-                    t = t / gamma;
+                    //t = t / gamma;
+                    t = momentum;
                     
                     check = 0;
                     
@@ -255,7 +256,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         {
                             eta[k] = eta[k] - X[k + nrow * (j + rangeGroupInd[i])]*beta[step*ncol + j + rangeGroupInd[i]];
                         }
-                        beta[step*ncol + j + rangeGroupInd[i]] = U[j] + count%reset/(count%reset+3) * (U[j] - theta[j + rangeGroupInd[i]]);
+                        
+                        //Nesterov acceleration:
+                        beta[step*ncol + j + rangeGroupInd[i]] = U[j] + count/(count+3) * (U[j] - theta[j + rangeGroupInd[i]]);
                         theta[j + rangeGroupInd[i]] = U[j];
                         
                         for(int k = 0; k < nrow; k++)
@@ -267,7 +270,6 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
         }
     }
-    cout << t << "\n";
 }
 
 
