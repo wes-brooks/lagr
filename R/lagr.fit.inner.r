@@ -80,7 +80,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
-        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, family=family, maxit=3, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, unpenalized=unpen)
+        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, family=family, maxit=20, delta=2, nlam=20, min.frac=0.00001, thresh=0.01, unpenalized=unpen)
 
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
