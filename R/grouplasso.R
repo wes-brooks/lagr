@@ -10,13 +10,12 @@
 #' @param delta exponent of the unpenalized group coefficient norm in the adaptive penalty weight
 #' @param gamma 
 #' @param verbose print detailed information about model fitting?
-#' @param momentum Nesterov momentum
 #' @param reset 
 #' @param lambda vector of prespecified lasso tuning parameters - leave NULL to have the lambdas calculated automatically.
 #' @param unpenalized index of any unpenalized groups
 #' 
 #' @return a list containing the coefficients, tuning parameters, AIC/AICc/BIC/GCV values, degrees of freedom, fitted values, and residuals
-grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, gamma=0.8, verbose=FALSE, momentum=1, reset=10, lambda=NULL, unpenalized=NULL) {
+grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.001, min.frac=0.1, nlam=20, delta=2, optim.step.size=0.8, verbose=FALSE, reset=10, lambda=NULL, unpenalized=NULL) {
     X.transform <- NULL
     if (is.null(weights)) {weights = rep(1,nrow(data$x))}
     
@@ -61,9 +60,8 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
                          min.frac=min.frac,
                          nlam=nlam,
                          lambda=lambda,
-                         gamma=gamma,
+                         optim.step.size=optim.step.size,
                          verbose=verbose,
-                         momentum=momentum,
                          reset=reset)
     
     res = list()

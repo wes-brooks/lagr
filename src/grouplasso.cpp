@@ -8,25 +8,19 @@ using namespace std;
 
 
 
-double loglik(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta, Function devfun)
+double loglik(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function devfun)
 {
     // Compute some values we need for the logLik computation:
     NumericVector mu = linkinv(eta);
-    //NumericVector variance = varfun(mu);
-    
-    // Calculate the residuals r and weights w:
-    //NumericVector r2 = pow(y - mu, 2);
-    //NumericVector w = weights / variance;
     
     // Calculate the actual log likelihood:
-    //double ll = 0.5 * sum(w * r2) / sum(weights);
     NumericVector dev_resids = devfun(y, mu, weights);
     double ll = sum(dev_resids);
     return(ll);
 }
 
 
-void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function varfun, Function mu_eta, NumericVector ldot)
+void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, NumericVector ldot)
 {
     // Compute some values we need for the gradient computation:
     NumericVector mu = linkinv(eta);
@@ -37,14 +31,13 @@ void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Functio
 }
 
 
-void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, int nrow, int ncol, int numGroup, NumericMatrix beta, Function linkinv, Function mu_eta, Function varfun, Function devfun, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, int innerIter, double thresh, NumericVector ldot, NumericVector nullBeta, double gamma, NumericVector eta, IntegerVector betaIsZero, int& groupChange, IntegerVector isActive, IntegerVector useGroup, double momentum, int reset)
+void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, int nrow, int ncol, int numGroup, NumericMatrix beta, Function linkinv, Function devfun, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, int step, int innerIter, double thresh, NumericVector ldot, NumericVector nullBeta, double gamma, NumericVector eta, IntegerVector betaIsZero, int& groupChange, IntegerVector isActive, IntegerVector useGroup, int reset)
 {
     NumericVector theta(ncol);
     int startInd = 0;
     double zeroCheck = 0;
     double check = 0;
     int count = 0;
-    double t = momentum;
     double diff = 1;
     double norm = 0;
     double uOp = 0;
@@ -54,11 +47,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
     double iProd = 0;
     NumericVector etaNew(nrow);
     NumericVector etaNull(nrow);
-    //NumericVector expect(nrow);
     NumericVector var(nrow);
-    
-    //funcPtr varianceFunction = *variance;
-    //funcPtr linkFunction = *link;
     
     for(int i = 0; i < numGroup; i++)
     {
@@ -77,7 +66,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
             }
             
             // Calculating Null Gradient
-            gradCalc(etaNull, y, w, linkinv, varfun, mu_eta, ldot);
+            gradCalc(etaNull, y, w, linkinv, ldot);
             
             NumericVector grad(groupLen[i]);
             for(int j = 0; j < groupLen[i]; j++)
@@ -130,13 +119,13 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 
                 count = 0;
                 check = 100000;
-                t = momentum;
+                double t = 1;
                 
                 while(count <= innerIter && check > thresh)
                 {
                     count++;
                     
-                    gradCalc(eta, y, w, linkinv, varfun, mu_eta, ldot);
+                    gradCalc(eta, y, w, linkinv, ldot);
                     
                     for(int j = 0; j < groupLen[i]; j++)
                     {          
@@ -148,7 +137,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     }
                     
                     diff = -1;                    
-                    Lold = loglik(eta, y, w, linkinv, varfun, mu_eta, devfun);
+                    Lold = loglik(eta, y, w, linkinv, devfun);
                     
                     // Back-tracking to optimize the step size for gradient descent:
                     int optim_steps = 0;
@@ -190,7 +179,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                             }
                         }
                         
-                        Lnew = loglik(etaNew, y, w, linkinv, varfun, mu_eta, devfun);
+                        Lnew = loglik(etaNew, y, w, linkinv, devfun);
                         
                         sqNormDelta = sum(pow(delta, 2));
                         iProd = sum(grad * delta);
@@ -229,7 +218,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
 
 
 // [[Rcpp::export]]
-int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function mu_eta, Function varfun, Function devfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, double momentum, int reset)
+int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function devfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, int reset)
 {
     NumericVector prob(nrow);
     NumericVector nullBeta(ncol);
@@ -260,10 +249,6 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
             }
         }
         
-        //Resolve pointers to the link and variance functions:
-        //XPtr<funcPtr> linkFunction(link);
-        //XPtr<funcPtr> varianceFunction(variance);
-        
         // outer most loop creating response etc...
         int outermostCounter = 0;
         double outermostCheck = 100000;
@@ -274,7 +259,7 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
         {
             groupChange = 0;
             
-            rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkinv, mu_eta, varfun, devfun, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, momentum, reset);
+            rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkinv, devfun, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, useGroup, reset);
             
             while(outermostCounter < outerIter && outermostCheck > outerThresh)
             {
@@ -289,7 +274,7 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
                     tempIsActive[i] = isActive[i];
                 }
                 
-                rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkinv, mu_eta, varfun, devfun, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, momentum, reset);
+                rcppLinSolver(X, y, w, adaweights, nrow, ncol, numGroup, beta, linkinv, devfun, rangeGroupInd, groupLen, lambda, step, innerIter, thresh, ldot, nullBeta, gamma, eta, betaIsZero, groupChange, isActive, tempIsActive, reset);
                 
                 outermostCheck = 0;
                 for(int i=0; i<p; i++)
@@ -297,9 +282,7 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
                     outermostCheck = outermostCheck + fabs(outerOldBeta[i] - beta[step*ncol + i]);
                 }
                 outermostCheck = outermostCheck / abs(sum(outerOldBeta));
-                //cout << "Outer convergence check: step=" << step << "; iteration=" << outermostCounter << "; delta=" << outermostCheck << "; threshold=" << outerThresh << "\n";
             }
-            //cout << "It took " << outermostCounter << " outer iterations to converge on the coefs for step " << step << ".\n";
         }
     }
     return 1;
