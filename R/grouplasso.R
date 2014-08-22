@@ -26,7 +26,7 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     #Find the adaptive group weights:
     adamodel = glm(Y~X-1, weights=weights, family=family)
     adamodel$df.residual = sum(weights)
-    result[['dispersion']] = dispersion = summary(adamodel)$dispersion
+    dispersion = summary(adamodel)$dispersion
     adapt = adamodel$coef
     
     groups = unique(index)
@@ -75,7 +75,7 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     
     res[['fitted']] = fitted = family$linkinv(as.matrix(X) %*% beta)
     res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
-    dev.resid.values = apply(fitted, 2, function(mu) family$dev.resids(Y, mu, weights))
+    res[['dev.resid.values']] = dev.resid.values = apply(fitted, 2, function(mu) family$dev.resids(Y, mu, weights))
     
     #Calculate the degrees of freedom used in estimating the coefficients.
     #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
@@ -92,6 +92,7 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     
     #res[['df']] = df = apply(group.df, 2, sum)
     #Naive df (add one for the intercept, which is estimated but does not appear in b)
+    res[['dispersion']] = dispersion
     res[['df']] = df = drop(apply(beta, 2, function(b) sum(b!=0) + 1))
     res[['BIC']] = apply(dev.resid.values, 2, sum) / dispersion + log(sum(weights))*df
     res[['AIC']] = apply(dev.resid.values, 2, sum) / dispersion + 2*df

@@ -15,7 +15,7 @@ test_that("str_length is number of characters", {
     
     y2 = ifelse(df$logitindpov > mean(df$logitindpov), 1, 0)
     df2 = df
-    df2$logitindpov=y2
+    df2$logitindpov = y2
     model = lagr(formula=f, data=df2, family=binomial(), coords=c('x','y'), fit.loc=fl, longlat=TRUE, varselect.method='AIC', bw=0.5, kernel=epanechnikov, bw.type='knn', verbose=TRUE)
     model = lagr(formula=f, data=df2, family=gaussian, coords=c('x','y'), fit.loc=fl, longlat=TRUE, varselect.method='AIC', bw=0.5, kernel=epanechnikov, bw.type='knn', verbose=TRUE)
     

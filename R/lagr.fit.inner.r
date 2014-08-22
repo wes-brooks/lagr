@@ -88,11 +88,11 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         model = glm(yyy~xxx-1, weights=w, family=family)
         vars = list(1:ncol(xxx))
         varset = vars[[1]]
-        df = ncol(xxx) + 2 #Add one for the scale parameter and one for the intercept
+        df = ncol(xxx) + 1 #Add one for the scale parameter
         
         fitted = model$fitted
         localfit = fitted[colocated]
-        s2 = summary(model)$dispersion
+        dispersion = summary(model)$dispersion
         k = 1
 
         #Estimating scale in penalty formula:
@@ -103,20 +103,23 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         if (is.null(oracle)) {
             #Extract the fitted values for each lambda:
             fitted = model[['results']][['fitted']]
-            s2 = sum(w*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - df) 
+            dispersion = sum(w*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - df) 
   
             #Compute the loss (varies by family)
             #loss = model[[varselect.method]]
-            if (varselect.method == 'AIC') {penalty = 2*df}
-            if (varselect.method == 'AICc') {penalty = 2*df + 2*df*(df+1)/(sumw - df - 1)}
-            if (varselect.method == 'BIC') {penalty = sumw*df}
+            #if (varselect.method == 'AIC') {penalty = 2*df}
+            #if (varselect.method == 'AICc') {penalty = 2*df + 2*df*(df+1)/(sumw - df - 1)}
+            #if (varselect.method == 'BIC') {penalty = sumw*df}
 
             #Assuming scale from the largest model:
             #loss = sumw * log(s2) + apply(model[['results']][['residuals']], 2, function(x) sum(w*x**2))/s2 + penalty
 
             #Estimating scale in penalty formula:
-            loss = sumw * (log(apply(model[['results']][['residuals']], 2, function(x) sum(w*x**2))) - log(sumw) + 1) + penalty
-
+            #loss = sumw * (log(apply(model[['results']][['residuals']], 2, function(x) sum(w*x**2))) - log(sumw) + 1) + penalty
+            
+            #Using the grouplasso's criteria:
+            loss = model[['results']][[varselect.method]]
+                
             #Estimating the loss only at the modeling location (not the total local loss)
             #loss = (model[['results']][['residuals']][colocated,])**2 + penalty*w[colocated] / sumw
 
@@ -145,13 +148,10 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
             deviance = family$dev.resids(yyy, fitted, w)
             tunelist[['ssr']][['deviance']] = sum(deviance)
             tunelist[['ssr-loc']][['deviance']] = sum(deviance[colocated])
-
-            #Compute the dispersion parameter:
-            if (family$family=='gaussian') { tunelist[['s2']] = s2 }
-            else if (family$family=='poisson') { tunelist[['s2']] = summary(m)$dispersion }
-            else if (family$family=='binomial') { tunelist[['s2']] = 1 }
-    
+            
             #Prepare some outputs for the bandwidth-finding scheme:
+            tunelist[['localfit']] = localfit
+            tunelist[['dispersion']] = dispersion
             tunelist[['n']] = sumw
             tunelist[['df']] = df
             tunelist[['df-local']] = df * w[colocated] / sumw
@@ -160,7 +160,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
         }                   
     } else {
         fitted = rep(meany, nrow(xxx))
-        s2 = 0
+        dispersion = 0
         loss = Inf
         loss.local = c(Inf)   
         localfit = meany
@@ -183,12 +183,12 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     nonzero = nonzero[nonzero != "(Intercept)"]
   
     if (tuning) {
-        return(list(tunelist=tunelist, s=k, sigma2=s2, nonzero=nonzero, weightsum=sumw, loss=loss))
+        return(list(tunelist=tunelist, s=k, dispersion=dispersion, nonzero=nonzero, weightsum=sumw, loss=loss))
     } else if (predict) {
-        return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, sigma2=s2, nonzero=nonzero))
+        return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, dispersion=dispersion, nonzero=nonzero))
     } else if (simulation) {
-        return(list(tunelist=tunelist, coef=coefs, s=k, sigma2=s2, fitted=localfit, nonzero=nonzero, actual=yyy[colocated], weightsum=sumw, loss=loss))
+        return(list(tunelist=tunelist, coef=coefs, s=k, dispersion=dispersion, fitted=localfit, nonzero=nonzero, actual=yyy[colocated], weightsum=sumw, loss=loss))
     } else {
-        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, s=k, loc=loc, df=df, loss.local=loss, sigma2=s2, fitted=localfit, weightsum=sumw, tunelist=tunelist))
+        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, s=k, loc=loc, df=df, loss.local=loss, dispersion=dispersion, fitted=localfit, weightsum=sumw, tunelist=tunelist))
     }
 }

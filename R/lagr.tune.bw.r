@@ -44,34 +44,46 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         resid.type=resid.type
     )
     
+    #Compute the model's degrees of freedom and log-likelihood
+    n = nrow(x)
+    df = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']], 1)))
+    dispersion = sum(sapply(lagr.model, function(x) x[['tunelist']][['dispersion']]))
+    fitted = sapply(lagr.model, function(x) x[['tunelist']][['localfit']])
+    dev.resids = family$dev.resids(y, fitted, weights)
+    ll = family$aic(y, n, fitted, weights, sum(dev.resids))
+    
     #Compute the loss at this bandwidth
     if (bwselect.method=='AICc') {
-        trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1)))
-        loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + (2*(trH+1)) / (nrow(x)-trH-2)
+        loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
+        #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + (2*(trH+1)) / (nrow(x)-trH-2)
     } else if (bwselect.method=='AIC') {
-        trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1)))
-        loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + 2*trH
+        
+        loss = ll + 2*df
+        #trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1)))
+        #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + 2*trH
     } else if (bwselect.method=='GCV') {
-        trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['trace-local']],1))) 
-        loss = sum(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]])) / (nrow(x)-trH)**2
+        loss = ll / (n-df)**2 / dispersion/n
+        #trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1))) 
+        #loss = sum(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]])) / (nrow(x)-trH)**2
     } else if (bwselect.method=='BICg') {
-        trH = sum(sapply(lagr.model, function(x) {
-            s2 = x[['tunelist']][['s2']]
-            if (family=='gaussian') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]])/s2 + log(s2) }
-            else if (family=='binomial') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) }
-            else if (family=='poisson') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]])/s2 }
-            df = x[['tunelist']][['df']]
-            return(ll + log(x[['tunelist']][['n']]) * df / x[['tunelist']][['n']])
-        }))
-        loss = trH + sum(sapply(lagr.model, function(x) min(x[['tunelist']][['ssr-loc']][[resid.type]])))
+        loss = ll + log(n)*df
+        #trH = sum(sapply(lagr.model, function(x) {
+        #    dispersion = x[['tunelist']][['dispersion']]
+        #    if (family=='gaussian') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) / dispersion }
+        #    else if (family=='binomial') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) }
+        #    else if (family=='poisson') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) /  }
+        #    df = x[['tunelist']][['df']]
+        #    return(ll + log(x[['tunelist']][['n']]) * df / x[['tunelist']][['n']])
+        #}))
+        #loss = trH + sum(sapply(lagr.model, function(x) min(x[['tunelist']][['ssr-loc']][[resid.type]])))
         #"Simplistic" BIC - based on eq4.22 from the Fotheringham et al. book:
         #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) {x[['ssr.local']]}))) + 1 + log(2*pi)) + trH * log(nrow(x))/2
     }
     
     res = mget('trace', env=env, ifnotfound=list(matrix(NA, nrow=0, ncol=3)))
-    res$trace = rbind(res$trace, c(bw, loss, trH))
+    res$trace = rbind(res$trace, c(bw, loss, df))
     assign('trace', res$trace, env=env)
     
-    cat(paste('Bandwidth: ', round(bw, 3), '. df: ', round(trH,4), '. Loss: ', signif(loss, 5), '\n', sep=''))
+    cat(paste('Bandwidth: ', round(bw, 3), '. df: ', round(df,4), '. Loss: ', signif(loss, 5), '\n', sep=''))
     return(loss)
 }
