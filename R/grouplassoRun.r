@@ -51,8 +51,6 @@ grouplassoRun <-
                             y = y,
                             w = weights,
                             linkinv=family$linkinv,
-                            mu_eta=family$mu.eta,
-                            varfun=family$variance,
                             devfun=family$dev.resids,
                             adaweights = adaweights,
                             nrow = n,

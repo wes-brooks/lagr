@@ -30,9 +30,8 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     if (sum(kernel.weights)==length(colocated)) {
         return(list('tunelist'=list('df-local'=1, 'ssr-loc'=list('pearson'=Inf, 'deviance'=Inf))))
     }
-
+    
     #Use oracular variable selection if specified
-    #orig.names = c("(Intercept)", colnames(x))
     orig.names = colnames(x)
     if (!is.null(oracle)) {
         x = matrix(x[,oracle], nrow=nrow(x), ncol=length(oracle))
@@ -175,7 +174,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     else {
         coefs = rep(0, length(orig.names))
         names(coefs) = orig.names
-        coefs[raw.names] = coef(model)[1:(length(oracle)+1)]
+        coefs[raw.names] = coef(model)[1:length(oracle)]
     }
     
     #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
