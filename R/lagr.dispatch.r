@@ -17,7 +17,7 @@
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
 #' 
-lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, resid.type) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type) {
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
@@ -85,7 +85,11 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
                 resid.type=resid.type,
                 oracle=oracle,
                 prior.weights=prior.weights,
-                verbose=verbose
+                verbose=verbose,
+                lambda.min.ratio=lambda.min.ratio,
+                n.lambda=n.lambda, 
+                lagr.convergence.tol=lagr.convergence.tol,
+                lagr.max.iter=lagr.max.iter
             )
             bandwidth = opt$minimum
             kernel.weights = drop(kernel(dist, bandwdth))
@@ -107,6 +111,10 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
             tuning=tuning,
             predict=predict,
             simulation=simulation,
+            lambda.min.ratio=lambda.min.ratio,
+            n.lambda=n.lambda, 
+            lagr.convergence.tol=lagr.convergence.tol,
+            lagr.max.iter=lagr.max.iter,
             verbose=verbose,
             kernel.weights=kernel.weights,
             prior.weights=prior.weights,
