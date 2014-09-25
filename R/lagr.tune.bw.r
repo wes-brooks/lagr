@@ -17,7 +17,7 @@
 #' 
 #' @return value of the \code{bwselect.method} criterion for the given bandwidth
 #' 
-lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, resid.type, verbose) {    
+lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, resid.type, lambda.min.ratio, n.lambda, beta.converge.tol, verbose) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
     
@@ -41,6 +41,9 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         min.dist=min.dist,
         max.dist=max.dist,
         tol.loc=tol.loc,
+        lambda.min.ratio=lambda.min.ratio,
+        n.lambda=n.lambda,
+        beta.converge.tol=beta.converge.tol,
         resid.type=resid.type
     )
     
