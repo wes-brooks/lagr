@@ -55,7 +55,8 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
         {
             startInd = rangeGroupInd[i];
             
-            // Setting up null gradient calc to check if group is 0
+            // Setting up null residuals calc to check if group is 0
+            // Null residuals means the coefficients of group i are set to zero before computing residuals.
             for(int k = 0; k < nrow; k++)
             {
                 etaNull[k] = eta[k];
@@ -64,10 +65,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     etaNull[k] = etaNull[k] - X[k + nrow * j] * beta[step*ncol + j]; 
                 }
             }
-            
-            // Calculating Null Gradient
             gradCalc(etaNull, y, w, linkinv, ldot);
             
+            // Now compute the correlation of this group with the null residuals.
             NumericVector grad(groupLen[i]);
             for(int j = 0; j < groupLen[i]; j++)
             {
@@ -77,10 +77,11 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     grad[j] = grad[j] + X[k + nrow * (j + rangeGroupInd[i])] * ldot[k];
                 }
             }
-            
             zeroCheck = sum(pow(grad,2));
             
-            if(zeroCheck <= pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i])  //Or not?
+            // Is this group's correlation with the null residuals smaller than the threshold?
+            // If so, set the coefficients of the group to zero.
+            if(zeroCheck <= pow(adaweights[i],2)*pow(lambda[step],2)*groupLen[i])
             {
                 if(betaIsZero[i] == 0)
                 {
@@ -98,7 +99,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     beta[step*ncol + j + rangeGroupInd[i]] = 0;
                 }
             }
-            else
+            else // The group's coefficients are nonzero
             {
                 if(isActive[i] == 0)
                 {
@@ -106,6 +107,7 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 }
                 isActive[i] = 1;
                 
+                // Hold the previous values of the coefficients
                 for(int k = 0; k < ncol; k++)
                 {
                     theta[k] = beta[step*ncol + k];
@@ -121,12 +123,15 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                 check = 100000;
                 double t = 1;
                 
+                // Until convergence, iteratively recompute the group's coefficients:
                 while(count <= innerIter && check > thresh)
                 {
                     count++;
                     
+                    // Compute the working residuals (i.e. residuals at the current coefficient values)
                     gradCalc(eta, y, w, linkinv, ldot);
                     
+                    // Compute the group's correlation with the working residuals
                     for(int j = 0; j < groupLen[i]; j++)
                     {          
                         grad[j] = 0;
@@ -136,10 +141,11 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         }
                     }
                     
-                    diff = -1;                    
+                    // Compute the log likelihood for the previous coefficient iteration
                     Lold = loglik(eta, y, w, linkinv, devfun);
                     
                     // Back-tracking to optimize the step size for gradient descent:
+                    diff = -1;
                     int optim_steps = 0;
                     while(diff < 0)
                     {
@@ -179,13 +185,16 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                             }
                         }
                         
+                        // Compute log likelihood for the working coefficients
                         Lnew = loglik(etaNew, y, w, linkinv, devfun);
                         
                         sqNormDelta = sum(pow(delta, 2));
                         iProd = sum(grad * delta);
                         
+                        // Check whether the working coefficients reduce the log likelihood
                         diff = Lold - Lnew + iProd + 0.5/t * sqNormDelta;
                         
+                        // Reduce the step size for the next iteration
                         t = t * gamma;
                     }
                     t = t / gamma;
@@ -194,16 +203,20 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                     
                     for(int j = 0; j < groupLen[i]; j++)
                     {
+                        // Check the difference between iterations of the coefficients
                         check = check + fabs(theta[j + rangeGroupInd[i]] - U[j]);
+
+                        // Calculate the null etas (i.e. the etas when group i's coefficients are zero)
                         for(int k = 0; k < nrow; k++)
                         {
                             eta[k] = eta[k] - X[k + nrow * (j + rangeGroupInd[i])]*beta[step*ncol + j + rangeGroupInd[i]];
                         }
                         
-                        //Nesterov acceleration:
+                        //Apply Nesterov acceleration to calculate the new coefficient values:
                         beta[step*ncol + j + rangeGroupInd[i]] = U[j] + count/(count+3) * (U[j] - theta[j + rangeGroupInd[i]]);
                         theta[j + rangeGroupInd[i]] = U[j];
                         
+                        // Compute the new values of eta after iterating group i's coefficients.
                         for(int k = 0; k < nrow; k++)
                         {
                             eta[k] = eta[k] + X[k + nrow * (j + rangeGroupInd[i])]*beta[step*ncol + j + rangeGroupInd[i]];
