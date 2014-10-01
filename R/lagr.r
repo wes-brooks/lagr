@@ -22,7 +22,7 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), lambda.min.ratio=0.00001, n.lambda=100, beta.converge.tol=0.1, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), lambda.min.ratio=0.00001, n.lambda=40, lagr.convergence.tol=0.1, lagr.max.iter=20, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     na.action = substitute(na.action)[1]
@@ -66,9 +66,9 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
         max.dist=max.dist,
         tol.loc=tol.loc,
         lambda.min.ratio=lambda.min.ratio,
-        n.lambda=n.lambda,
-        beta.converge.tol=beta.converge.tol,
-        resid.type=resid.type
+        n.lambda=n.lambda, 
+        lagr.convergence.tol=lagr.convergence.tol,
+        lagr.max.iter=lagr.max.iter
     )
     
     #Store results from model fitting:
@@ -88,7 +88,7 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
         res[['na.action']] <- attr(mf, "na.action")
         res[['contrasts']] <- attr(x, "contrasts")
         res[['xlevels']] <- .getXlevels(mt, mf)
-        #res[['call']] <- cl
+        res[['call']] <- cl
         res[['terms']] <- mt
     }
     class(res) = "lagr"

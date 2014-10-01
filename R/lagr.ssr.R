@@ -21,7 +21,7 @@
 #' @param verbose print detailed information about our progress?
 #' 
 #' 
-lagr.ssr = function(bw, x, y, family, loc, coords, dist, kernel, target, varselect.method, resid.type, prior.weights, oracle, verbose) {
+lagr.ssr = function(bw, x, y, family, loc, coords, dist, kernel, target, varselect.method, resid.type, prior.weights, oracle, verbose, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter) {
     #Calculate the local weights:
     kernel.weights = drop(kernel(dist, bw))
     
@@ -38,7 +38,11 @@ lagr.ssr = function(bw, x, y, family, loc, coords, dist, kernel, target, varsele
         verbose=verbose,
         kernel.weights=kernel.weights,
         prior.weights=prior.weights,
-        oracle=oracle
+        oracle=oracle,
+        lambda.min.ratio=lambda.min.ratio,
+        n.lambda=n.lambda, 
+        lagr.convergence.tol=lagr.convergence.tol,
+        lagr.max.iter=lagr.max.iter
     )
     
     loss = lagr.object[['ssr']][[resid.type]]

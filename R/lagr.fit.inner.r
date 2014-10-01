@@ -21,8 +21,8 @@
 #'   
 #' @return list of coefficients, nonzero coefficient identities, and tuning data
 #' @useDynLib lagr 
-#'    
-lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, verbose, lambda.min.ratio, n.lambda, beta.converge.tol, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
+#'
+lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, n.lambda, lambda.min.ratio, lagr.convergence.tol, lagr.max.iter, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
     #Find which observations were made at the model location  
     colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))
 
@@ -30,9 +30,8 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     if (sum(kernel.weights)==length(colocated)) {
         return(list('tunelist'=list('df-local'=1, 'ssr-loc'=list('pearson'=Inf, 'deviance'=Inf))))
     }
-
+    
     #Use oracular variable selection if specified
-    #orig.names = c("(Intercept)", colnames(x))
     orig.names = colnames(x)
     if (!is.null(oracle)) {
         x = matrix(x[,oracle], nrow=nrow(x), ncol=length(oracle))
@@ -80,7 +79,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
-        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, family=family, maxit=20, delta=2, nlam=n.lambda, min.frac=lambda.min.ratio, thresh=beta.converge.tol, unpenalized=unpen)
+        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, family=family, maxit=lagr.max.iter, delta=2, nlam=n.lambda, min.frac=lambda.min.ratio, thresh=lagr.convergence.tol, unpenalized=unpen)
 
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
@@ -175,7 +174,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     else {
         coefs = rep(0, length(orig.names))
         names(coefs) = orig.names
-        coefs[raw.names] = coef(model)[1:(length(oracle)+1)]
+        coefs[raw.names] = coef(model)[1:length(oracle)]
     }
     
     #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.

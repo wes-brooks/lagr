@@ -27,12 +27,12 @@
 #' @return \code{list(bw, trace)} where \code{bw} minimizes the bandwidth selection criterion and trace is a data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
 #' 
 #' @export
-lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BICg'), resid.type=c('deviance','pearson'), lambda.min.ratio=0.00001, n.lambda=100, beta.converge.tol, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BICg'), resid.type=c('deviance','pearson'), lambda.min.ratio=0.00001, n.lambda=40, lagr.convergence.tol=0.1, lagr.max.iter=20, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     na.action = substitute(na.action)[1]
-    mf = eval(lagr.parse.model.frame(formula, data, family, weights, coords, NULL, longlat, na.action, contrasts))
-    
+    mf = eval(lagr.parse.model.frame(formula, data, family, weights, coords, NULL, longlat, na.action, contrasts))  
+
     y = mf$y
     x = mf$x
     w = mf$w
@@ -92,13 +92,14 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
         resid.type=resid.type,
         bwselect.method=bwselect.method,
         lambda.min.ratio=lambda.min.ratio,
-        n.lambda=n.lambda,
-        beta.converge.tol=beta.converge.tol
+        n.lambda=n.lambda, 
+        lagr.convergence.tol=lagr.convergence.tol,
+        lagr.max.iter=lagr.max.iter
     )
     trace = oo$trace[!duplicated(oo$trace[,1]),]
     rm(oo)
     
     bdwt <- opt$minimum
     res <- bdwt
-    return(list(bw=res, trace=trace, bwselect.method=bwselect.method, resid.type=resid.type))
+    return(list(bw=res, trace=trace, bwselect.method=bwselect.method, resid.type=resid.type, call=cl))
 }
