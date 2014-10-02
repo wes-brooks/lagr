@@ -118,10 +118,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
             verbose=verbose,
             kernel.weights=kernel.weights,
             prior.weights=prior.weights,
-            oracle=oracle.loc,
-            lambda.min.ratio=lambda.min.ratio,
-            n.lambda=n.lambda,
-            beta.converge.tol=beta.converge.tol)
+            oracle=oracle.loc)
         )
         if (verbose) {
             cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; dispersion=", round(tail(m[['dispersion']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))
