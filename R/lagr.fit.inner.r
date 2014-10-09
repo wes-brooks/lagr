@@ -22,7 +22,7 @@
 #' @return list of coefficients, nonzero coefficient identities, and tuning data
 #' @useDynLib lagr 
 #'
-lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, n.lambda, lambda.min.ratio, lagr.convergence.tol, lagr.max.iter, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
+lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, n.lambda, lambda.min.ratio, lagr.convergence.tol, lagr.max.iter, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
     #Find which observations were made at the model location  
     colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))
 
@@ -39,10 +39,9 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     }
 
     #Establish groups for the group lasso and if there's an intercept, mark it as unpenalized
-    vargroup = attr(x, 'assign')
-    if (0 %in% vargroup)
+    if (0 %in% group.id)
         unpen = 0
-    raw.vargroup = vargroup
+    raw.vargroup = group.id
         
     #This is the naming system for the covariate-by-location interaction variables.
     raw.names = colnames(x)
@@ -57,7 +56,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     for (k in 1:ncol(x)) {
         interacted[,2*(k-1)+1] = x[,k]*(coords[,1]-loc[[1]])
         interacted[,2*k] = x[,k]*(coords[,2]-loc[[2]])
-        vargroup = c(vargroup, vargroup[k], vargroup[k])
+        group.id = c(group.id, group.id[k], group.id[k])
     }
     x.interacted = cbind(x, interacted)
     colnames(x.interacted) = c(raw.names, interact.names)
@@ -79,7 +78,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
-        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=vargroup, family=family, maxit=lagr.max.iter, delta=2, nlam=n.lambda, min.frac=lambda.min.ratio, thresh=lagr.convergence.tol, unpenalized=unpen)
+        model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=group.id, family=family, maxit=lagr.max.iter, delta=2, nlam=n.lambda, min.frac=lambda.min.ratio, thresh=lagr.convergence.tol, unpenalized=unpen)
 
         vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
         df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
@@ -103,25 +102,10 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
             #Extract the fitted values for each lambda:
             fitted = model[['results']][['fitted']]
             dispersion = sum(w*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - df) 
-  
-            #Compute the loss (varies by family)
-            #loss = model[[varselect.method]]
-            #if (varselect.method == 'AIC') {penalty = 2*df}
-            #if (varselect.method == 'AICc') {penalty = 2*df + 2*df*(df+1)/(sumw - df - 1)}
-            #if (varselect.method == 'BIC') {penalty = sumw*df}
 
-            #Assuming scale from the largest model:
-            #loss = sumw * log(s2) + apply(model[['results']][['residuals']], 2, function(x) sum(w*x**2))/s2 + penalty
-
-            #Estimating scale in penalty formula:
-            #loss = sumw * (log(apply(model[['results']][['residuals']], 2, function(x) sum(w*x**2))) - log(sumw) + 1) + penalty
-            
             #Using the grouplasso's criteria:
             loss = model[['results']][[varselect.method]]
                 
-            #Estimating the loss only at the modeling location (not the total local loss)
-            #loss = (model[['results']][['residuals']][colocated,])**2 + penalty*w[colocated] / sumw
-
             #Pick the lambda that minimizes the loss:
             k = which.min(loss)
             fitted = fitted[,k]
@@ -133,30 +117,14 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
                 varset = NULL
             }
         }      
-
-        if (length(colocated)>0) {
-            tunelist[['ssr-loc']] = list()
-            tunelist[['ssr']] = list()
             
-            #Pearson residuals:
-            pearson = w * (yyy - fitted)**2 / family$variance(fitted)
-            tunelist[['ssr']][['pearson']] = sum(pearson)
-            tunelist[['ssr-loc']][['pearson']] = sum(pearson[colocated])
-
-            #Deviance residuals:
-            deviance = family$dev.resids(yyy, fitted, w)
-            tunelist[['ssr']][['deviance']] = sum(deviance)
-            tunelist[['ssr-loc']][['deviance']] = sum(deviance[colocated])
-            
-            #Prepare some outputs for the bandwidth-finding scheme:
-            tunelist[['localfit']] = localfit
-            tunelist[['dispersion']] = dispersion
-            tunelist[['n']] = sumw
-            tunelist[['df']] = df
-            tunelist[['df-local']] = df * w[colocated] / sumw
-        } else {
-            loss.local = NA
-        }                   
+        #Prepare some outputs for the bandwidth-finding scheme:
+        tunelist[['localfit']] = localfit
+        tunelist[['dispersion']] = dispersion
+        tunelist[['n']] = sumw
+        tunelist[['df']] = df
+        tunelist[['df-local']] = df / sumw
+                  
     } else {
         fitted = rep(meany, nrow(xxx))
         dispersion = 0
@@ -178,7 +146,7 @@ lagr.fit.inner = function(x, y, coords, loc, family, varselect.method, oracle, t
     }
     
     #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
-    nonzero = raw.names[which(raw.vargroup %in% unique(vargroup[vars[[k]]]))]
+    nonzero = raw.names[which(raw.vargroup %in% unique(group.id[vars[[k]]]))]
     nonzero = nonzero[nonzero != "(Intercept)"]
   
     if (tuning) {

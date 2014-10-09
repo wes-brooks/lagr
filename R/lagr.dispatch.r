@@ -17,11 +17,11 @@
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
 #' 
-lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type, jacknife=FALSE) {
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
-    
+
     lagr.object = list()
 
     #For the adaptive bandwith methods, use a default tolerance if none is specified:
@@ -30,15 +30,23 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
     #The knn bandwidth is a proportion of the total prior weight, so compute the total prior weight:
     if (bw.type == 'knn') {
         prior.weights = drop(prior.weights)
-        max.weights = rep(1, length(prior.weights))
-        total.weight = sum(max.weights * prior.weights)
+        total.weight = sum(prior.weights)
     }
+
+    group.id = attr(x, 'assign')
     
     models = foreach(i=1:n, .errorhandling='pass') %dopar% {
         if (!is.null(fit.loc)) {
             dist = drop(D[nrow(coords)+i,1:nrow(coords)])
         } else { dist = drop(D[i,]) }
         loc = coords.fit[i,]
+
+        #If we are seeking the bandwidth via the jacknife, then remove any observations with zero distance.
+        if (jacknife) {
+            indx = which(dist!=0)
+        } else {
+            indx = 1:nrow(x)
+        }
         
         #Use a prespecified distance as the bandwidth?
         if (bw.type == 'dist') {
@@ -54,12 +62,12 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
                 maximum=FALSE,
                 tol=tol.loc,
                 loc=loc,
-                coords=coords,
+                coords=coords[indx,],
                 kernel=kernel,
                 verbose=verbose,
-                dist=dist,
+                dist=dist[indx],
                 total.weight=total.weight,
-                prior.weights=prior.weights,
+                prior.weights=prior.weights[indx],
                 target=bw
             )
             bandwidth = opt$minimum
@@ -73,18 +81,19 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
                 upper=max.dist, 
                 maximum=FALSE,
                 tol=tol.loc,
-                x=x,
-                y=y,
+                x=x[indx,],
+                y=y[indx],
+                group.id=group.id,
                 family=family,
                 loc=loc,
-                coords=coords,
-                dist=dist,
+                coords=coords[indx,],
+                dist=dist[indx],
                 kernel=kernel,
                 target=bw,
                 varselect.method=varselect.method,
                 resid.type=resid.type,
                 oracle=oracle,
-                prior.weights=prior.weights,
+                prior.weights=prior.weights[indx],
                 verbose=verbose,
                 lambda.min.ratio=lambda.min.ratio,
                 n.lambda=n.lambda, 
@@ -92,7 +101,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
                 lagr.max.iter=lagr.max.iter
             )
             bandwidth = opt$minimum
-            kernel.weights = drop(kernel(dist, bandwdth))
+            kernel.weights = drop(kernel(dist, bandwidth))
         }
         
         #If we have specified covariates via an oracle, then use those
@@ -102,10 +111,11 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         #Fit the local model
         m = list(tunelist=list('ssr-loc'=list('pearson'=Inf, 'deviance'=Inf), 'df-local'=1), 'sigma2'=0, 'nonzero'=vector(), 'weightsum'=sum(kernel.weights))
         try(m <- lagr.fit.inner(
-            x=x,
-            y=y,
+            x=x[indx,],
+            y=y[indx],
+            group.id=group.id,
             family=family,
-            coords=coords,
+            coords=coords[indx,],
             loc=loc,
             varselect.method=varselect.method,
             tuning=tuning,
@@ -116,13 +126,14 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
             lagr.convergence.tol=lagr.convergence.tol,
             lagr.max.iter=lagr.max.iter,
             verbose=verbose,
-            kernel.weights=kernel.weights,
-            prior.weights=prior.weights,
+            kernel.weights=kernel.weights[indx],
+            prior.weights=prior.weights[indx],
             oracle=oracle.loc)
         )
         if (verbose) {
             cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; dispersion=", round(tail(m[['dispersion']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))
         }
+        m[['bw']] = bandwidth
         return(m)
     }
     
