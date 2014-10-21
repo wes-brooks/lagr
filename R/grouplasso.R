@@ -67,7 +67,8 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     res = list()
     
     #Return the weighted mean to the intercept:
-    beta = Sol$beta
+    beta = cbind(Sol$beta, adapt)
+    colnames(beta) = NULL
     intercept = beta[1,]
     Sol$beta = beta
     
