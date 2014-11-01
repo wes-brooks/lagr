@@ -101,15 +101,15 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
         if (is.null(oracle)) {
             #Extract the fitted values for each lambda:
             fitted = model[['results']][['fitted']]
-            dispersion = sum(w*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - df) 
+            dispersion = sum(w*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - tail(df,1)) 
 
             #Using the grouplasso's criteria:
             loss = model[['results']][[varselect.method]]
                 
             #Pick the lambda that minimizes the loss:
             k = which.min(loss)
-            fitted = fitted[,k]
-            localfit = fitted[colocated]
+            #fitted = fitted[,k]
+            localfit = fitted[colocated,]
             df = df[k]
             if (k > 1) {
                 varset = vars[[k]]
@@ -120,6 +120,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
             
         #Prepare some outputs for the bandwidth-finding scheme:
         tunelist[['localfit']] = localfit
+        tunelist[['criterion']] = model[['results']][[varselect.method]]
         tunelist[['dispersion']] = dispersion
         tunelist[['n']] = sumw
         tunelist[['df']] = df
@@ -135,7 +136,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     
     #Get the coefficients:
     if (is.null(oracle)) {
-        coefs = Matrix(drop(model[['beta']][,k]))
+        coefs = Matrix(drop(model[['beta']]))
         rownames(coefs) = colnames(xxx)
         coefs = coefs[raw.names,]
     }

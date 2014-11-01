@@ -17,7 +17,7 @@
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
 #' 
-lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type, jacknife=FALSE) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type, jacknife=FALSE, bootstrap.index=NULL) {
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
@@ -42,10 +42,18 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         loc = coords.fit[i,]
 
         #If we are seeking the bandwidth via the jacknife, then remove any observations with zero distance.
-        if (jacknife) {
+        if (jacknife==TRUE || jacknife=='anti') {
             indx = which(dist!=0)
         } else {
             indx = 1:nrow(x)
+        }
+
+        if (!is.null(bootstrap.index)) {
+            indx = indx[bootstrap.index]
+        }
+
+        if (jacknife=='anti') {
+            indx = c(indx, which(indx==0))
         }
         
         #Use a prespecified distance as the bandwidth?
