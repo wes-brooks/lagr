@@ -48,40 +48,48 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         lagr.max.iter=lagr.max.iter
     )
     
-    #Compute the model's degrees of freedom and log-likelihood
+    # Compute the model degrees of freedom
     n = nrow(x)
     df = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']], 1)))
     dispersion = sum(sapply(lagr.model, function(x) x[['tunelist']][['dispersion']]))
-    fitted = sapply(lagr.model, function(x) x[['tunelist']][['localfit']])
-    dev.resids = family$dev.resids(y, fitted, weights)
-    ll = family$aic(y, n, fitted, weights, sum(dev.resids))
+
+    if (bwselect.method != 'jacknife') {
+        fitted = sapply(lagr.model, function(x) {
+            crit = x[['tunelist']][['criterion']]
+            crit.weights = exp(-0.5*(min(crit)-crit)**2)
+            sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights)
+            })
+        dev.resids = family$dev.resids(y, fitted, weights)
+        ll = family$aic(y, n, fitted, weights, sum(dev.resids))
     
-    #Compute the loss at this bandwidth
-    if (bwselect.method=='AICc') {
-        loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
-        #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + (2*(trH+1)) / (nrow(x)-trH-2)
-    } else if (bwselect.method=='AIC') {
+        #Compute the loss at this bandwidth
+        if (bwselect.method=='AICc') {
+            loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
+        } else if (bwselect.method=='AIC') {
+            loss = ll + 2*df
+        } else if (bwselect.method=='GCV') {
+            loss = ll
+        } else if (bwselect.method=='CV') {
         
-        loss = ll + 2*df
-        #trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1)))
-        #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]]))) + log(2*pi) + 1) + 2*trH
-    } else if (bwselect.method=='GCV') {
-        loss = ll / (n-df)**2 / dispersion/n
-        #trH = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']],1))) 
-        #loss = sum(sapply(lagr.model, function(x) x[['tunelist']][['ssr-loc']][[resid.type]])) / (nrow(x)-trH)**2
-    } else if (bwselect.method=='BICg') {
-        loss = ll + log(n)*df
-        #trH = sum(sapply(lagr.model, function(x) {
-        #    dispersion = x[['tunelist']][['dispersion']]
-        #    if (family=='gaussian') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) / dispersion }
-        #    else if (family=='binomial') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) }
-        #    else if (family=='poisson') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) /  }
-        #    df = x[['tunelist']][['df']]
-        #    return(ll + log(x[['tunelist']][['n']]) * df / x[['tunelist']][['n']])
-        #}))
-        #loss = trH + sum(sapply(lagr.model, function(x) min(x[['tunelist']][['ssr-loc']][[resid.type]])))
-        #"Simplistic" BIC - based on eq4.22 from the Fotheringham et al. book:
-        #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) {x[['ssr.local']]}))) + 1 + log(2*pi)) + trH * log(nrow(x))/2
+            loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
+        } else if (bwselect.method=='BICg') {
+            loss = ll + log(n)*df
+            #trH = sum(sapply(lagr.model, function(x) {
+            #    dispersion = x[['tunelist']][['dispersion']]
+            #    if (family=='gaussian') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) / dispersion }
+            #    else if (family=='binomial') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) }
+            #    else if (family=='poisson') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) /  }
+            #    df = x[['tunelist']][['df']]
+            #    return(ll + log(x[['tunelist']][['n']]) * df / x[['tunelist']][['n']])
+            #}))
+            #loss = trH + sum(sapply(lagr.model, function(x) min(x[['tunelist']][['ssr-loc']][[resid.type]])))
+            #"Simplistic" BIC - based on eq4.22 from the Fotheringham et al. book:
+            #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) {x[['ssr.local']]}))) + 1 + log(2*pi)) + trH * log(nrow(x))/2
+        }
+    } else {
+        fitted = sapply(1:n, function(k) sum(lagr.model[[k]][['coefs']] * cbind(1, x[k,])))
+        dev.resids = family$dev.resids(y, fitted, weights)
+        loss = sum(family$aic(y, n, fitted, weights, sum(dev.resids)))
     }
     
     res = mget('trace', env=env, ifnotfound=list(matrix(NA, nrow=0, ncol=3)))
