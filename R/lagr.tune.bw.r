@@ -20,7 +20,15 @@
 lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, resid.type, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, verbose) {    
     #Fit the model with the given bandwidth:
     cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
-    
+
+    # Tell lagr.dispatch whether to select bandwidth via the jacknife
+    if (bwselect.method=='jacknife') {
+        jacknife = TRUE
+    } else {
+        jacknife = FALSE
+    }
+
+
     lagr.model = lagr.dispatch(
         x=x,
         y=y,
@@ -59,6 +67,7 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
             crit.weights = exp(-0.5*(min(crit)-crit)**2)
             sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights)
             })
+
         dev.resids = family$dev.resids(y, fitted, weights)
         ll = family$aic(y, n, fitted, weights, sum(dev.resids))
     
