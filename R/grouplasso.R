@@ -68,21 +68,11 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     
     #Return the weighted mean to the intercept:
     beta = cbind(Sol$beta, adapt)
-<<<<<<< HEAD
     intercept = drop(beta[1,])
 
     fitted = family$linkinv(as.matrix(X) %*% beta)
     resid = sweep(fitted, 1, Y, '-')
     dev.resid.values = apply(fitted, 2, function(mu) family$dev.resids(Y, mu, weights))
-=======
-    colnames(beta) = NULL
-    intercept = beta[1,]
-    Sol$beta = beta
-    
-    res[['fitted']] = fitted = family$linkinv(as.matrix(X) %*% beta)
-    res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
-    res[['dev.resid.values']] = dev.resid.values = apply(fitted, 2, function(mu) family$dev.resids(Y, mu, weights))
->>>>>>> 721c5e06ef437b5a9c838158f00ca8a2f9b9448c
     
     #Calculate the degrees of freedom used in estimating the coefficients.
     #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
@@ -100,35 +90,12 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     #res[['df']] = df = apply(group.df, 2, sum)
     #Naive df (add one for the intercept, which is estimated but does not appear in b)
     res[['dispersion']] = dispersion
-    df = drop(apply(beta, 2, function(b) sum(b!=0) + 1))
-    ll = apply(dev.resid.values, 2, sum) / dispersion
-    res[['BIC']] = ll + log(sum(weights))*df
-    res[['AIC']] = ll + 2*df
-    res[['AICc']] = ll + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
+    res[['df']] = df = drop(apply(beta, 2, function(b) sum(b!=0) + 1))
+    res[['BIC']] = apply(dev.resid.values, 2, sum) / dispersion + log(sum(weights))*df
+    res[['AIC']] = apply(dev.resid.values, 2, sum) / dispersion + 2*df
+    res[['AICc']] = apply(dev.resid.values, 2, sum) / dispersion + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
     
-    #For each variable combination represented in the results, find the coefficients that minimise the loss:
-    models = as.factor(apply(beta, 2, function(x) paste(as.integer(x!=0), collapse="")))  
-    best.index = vector()
-    for (l in levels(models)) {
-        best.index = c(best.index, which.min(ifelse(models==l, ll, Inf)))
-    }
-    
-    #Filter the results:
-    res[['df']] = df[best.index]
-    res[['BIC']] = res[['BIC']][best.index]
-    res[['AIC']] = res[['AIC']][best.index]
-    res[['AICc']] = res[['AICc']][best.index]
-    beta = beta[,best.index]
-    intercept = intercept[best.index]
-    res[['fitted']] = fitted[,best.index]
-    res[['residuals']] = resid[,best.index]
-    res[['dev.resid.values']] = dev.resid.values[,best.index]
-    
-    p.max = ncol(X)
-    dispersion = sum(weights * dev.resid.values[,ncol(dev.resid.values)]^2) / (sum(weights)-p.max-1)
-    res[['full.model.cov']] = dispersion * chol2inv(adamodel$qr$qr[1:p.max, 1:p.max])
-    
-    Sol <- list(beta=beta, lambda=Sol$lambda[best.index], intercept=intercept, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
+    Sol <- list(beta=Sol$beta, lambda=Sol$lambda, intercept=intercept, X.transform=X.transform, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
     
     class(Sol) = "grouplasso"
     return(Sol)
