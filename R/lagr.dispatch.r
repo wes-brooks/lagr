@@ -44,8 +44,12 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         #If we are seeking the bandwidth via the jacknife, then remove any observations with zero distance.
         if (jacknife==TRUE || jacknife=='anti') {
             indx = which(dist!=0)
-        } else {
+        } else if (jacknife==FALSE) {
             indx = 1:nrow(x)
+        } 
+        
+        if (!is.null(bootstrap.index)) {
+            indx = indx[bootstrap.index]
         }
 
         if (!is.null(bootstrap.index)) {
@@ -55,6 +59,11 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         if (jacknife=='anti') {
             indx = c(indx, which(indx==0))
         }
+        
+        #If this is an anti-jacknife procedure then add the central observation back to the mix:
+        if (jacknife=='anti') {
+            indx = c(indx, which(dist==0)[1])
+        } 
         
         #Use a prespecified distance as the bandwidth?
         if (bw.type == 'dist') {

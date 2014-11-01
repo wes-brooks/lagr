@@ -1,3 +1,7 @@
 .Rproj.user
 .Rhistory
 .RData
+src/grouplasso.o
+src/RcppExports.o
+src/lagr.so
+

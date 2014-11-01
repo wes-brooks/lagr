@@ -68,11 +68,21 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     
     #Return the weighted mean to the intercept:
     beta = cbind(Sol$beta, adapt)
+<<<<<<< HEAD
     intercept = drop(beta[1,])
 
     fitted = family$linkinv(as.matrix(X) %*% beta)
     resid = sweep(fitted, 1, Y, '-')
     dev.resid.values = apply(fitted, 2, function(mu) family$dev.resids(Y, mu, weights))
+=======
+    colnames(beta) = NULL
+    intercept = beta[1,]
+    Sol$beta = beta
+    
+    res[['fitted']] = fitted = family$linkinv(as.matrix(X) %*% beta)
+    res[['residuals']] = resid = sweep(fitted, 1, Y, '-')
+    res[['dev.resid.values']] = dev.resid.values = apply(fitted, 2, function(mu) family$dev.resids(Y, mu, weights))
+>>>>>>> 721c5e06ef437b5a9c838158f00ca8a2f9b9448c
     
     #Calculate the degrees of freedom used in estimating the coefficients.
     #See Wang and Leng, 2008 (Computational Statistics and Data Analysis (52) pg5279), for details 
