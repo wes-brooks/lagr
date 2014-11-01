@@ -17,11 +17,7 @@
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
 #' 
-<<<<<<< HEAD
 lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type, jacknife=FALSE, bootstrap.index=NULL) {
-=======
-lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type, jacknife=FALSE) {
->>>>>>> covariance
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
