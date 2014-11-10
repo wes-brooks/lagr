@@ -102,6 +102,10 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     for (l in levels(models)) {
         best.index = c(best.index, which.min(ifelse(models==l, ll, Inf)))
     }
+
+    w = exp(0.5*(min(res[['AIC']])-res[['AIC']]))
+    w = matrix(w / sum(w))
+    res[['big.avg']] = beta %*% w
     
     #Filter the results:
     res[['df']] = df[best.index]

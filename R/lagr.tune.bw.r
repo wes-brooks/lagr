@@ -66,7 +66,7 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
             crit = x[['tunelist']][['criterion']]
             crit.weights = exp(-0.5*(min(crit)-crit)**2)
             sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights)
-            })
+        })
 
         dev.resids = family$dev.resids(y, fitted, weights)
         ll = family$aic(y, n, fitted, weights, sum(dev.resids))
