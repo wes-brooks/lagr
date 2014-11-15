@@ -62,10 +62,18 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
     dispersion = sum(sapply(lagr.model, function(x) x[['tunelist']][['dispersion']]))
 
     if (bwselect.method != 'jacknife') {
+        #Model-averaging the fitted values:
         fitted = sapply(lagr.model, function(x) {
             crit = x[['tunelist']][['criterion']]
             crit.weights = exp(-0.5*(min(crit)-crit)**2)
             sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights)
+        })
+        
+        #Model-averaging the degrees of freedom
+        df = sapply(lagr.model, function(x) {
+            crit = x[['tunelist']][['criterion']]
+            crit.weights = exp(-0.5*(min(crit)-crit)**2)
+            sum((1+x[['model']][['results']][['df']]) * crit.weights) / sum(crit.weights)
         })
 
         dev.resids = family$dev.resids(y, fitted, weights)
