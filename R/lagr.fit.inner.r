@@ -138,7 +138,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     if (is.null(oracle)) {
         coefs = Matrix(drop(model[['beta']]))
         rownames(coefs) = colnames(xxx)
-        coefs = coefs[raw.names,]
+        #coefs = coefs[raw.names,]
     }
     else {
         coefs = rep(0, length(orig.names))
@@ -151,7 +151,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     nonzero = nonzero[nonzero != "(Intercept)"]
   
     if (tuning) {
-        return(list(tunelist=tunelist, s=k, dispersion=dispersion, nonzero=nonzero, weightsum=sumw, loss=loss))
+        return(list(tunelist=tunelist, model=model, s=k, dispersion=dispersion, nonzero=nonzero, weightsum=sumw, loss=loss))
     } else if (predict) {
         return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, dispersion=dispersion, nonzero=nonzero))
     } else if (simulation) {

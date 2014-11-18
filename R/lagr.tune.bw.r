@@ -19,7 +19,7 @@
 #' 
 lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, resid.type, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, verbose) {    
     #Fit the model with the given bandwidth:
-    cat(paste("starting bw:", round(bw, 3), '\n', sep=''))
+    cat(paste('Bandwidth: ', round(bw, 3), '; ', sep=""))
 
     # Tell lagr.dispatch whether to select bandwidth via the jacknife
     if (bwselect.method=='jacknife') {
@@ -65,16 +65,24 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         #Model-averaging the fitted values:
         fitted = sapply(lagr.model, function(x) {
             crit = x[['tunelist']][['criterion']]
-            crit.weights = exp(-0.5*(min(crit)-crit)**2)
+            if (varselect.method %in% c("AIC", "AICc")) {
+                crit.weights = exp(-0.5*(min(crit)-crit)**2)
+            } else if (varselect.method == "wAIC") {
+                crit.weights = crit
+            }
             sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights)
         })
         
         #Model-averaging the degrees of freedom
-        df = sapply(lagr.model, function(x) {
+        df = sum(sapply(lagr.model, function(x) {
             crit = x[['tunelist']][['criterion']]
-            crit.weights = exp(-0.5*(min(crit)-crit)**2)
-            sum((1+x[['model']][['results']][['df']]) * crit.weights) / sum(crit.weights)
-        })
+            if (varselect.method %in% c("AIC", "AICc")) {
+                crit.weights = exp(-0.5*(min(crit)-crit)**2)
+            } else if (varselect.method == "wAIC") {
+                crit.weights = crit
+            }
+            sum((1+x[['model']][['results']][['df']]) / x[['weightsum']] * crit.weights) / sum(crit.weights)
+        }))
 
         dev.resids = family$dev.resids(y, fitted, weights)
         ll = family$aic(y, n, fitted, weights, sum(dev.resids))
@@ -87,7 +95,6 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         } else if (bwselect.method=='GCV') {
             loss = ll
         } else if (bwselect.method=='CV') {
-        
             loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
         } else if (bwselect.method=='BICg') {
             loss = ll + log(n)*df
@@ -113,6 +120,6 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
     res$trace = rbind(res$trace, c(bw, loss, df))
     assign('trace', res$trace, env=env)
     
-    cat(paste('Bandwidth: ', round(bw, 3), '. df: ', round(df,4), '. Loss: ', signif(loss, 5), '\n', sep=''))
+    cat(paste('df: ', round(df,4), '; Loss: ', signif(loss, 5), '\n', sep=''))
     return(loss)
 }

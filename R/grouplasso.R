@@ -95,17 +95,13 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     res[['BIC']] = ll + log(sum(weights))*df
     res[['AIC']] = ll + 2*df
     res[['AICc']] = ll + 2*df + 2*df*(df+1)/(sum(weights)-df-1)
-    
+
     #For each variable combination represented in the results, find the coefficients that minimise the loss:
     models = as.factor(apply(beta, 2, function(x) paste(as.integer(x!=0), collapse="")))  
     best.index = vector()
     for (l in levels(models)) {
         best.index = c(best.index, which.min(ifelse(models==l, ll, Inf)))
     }
-
-    w = exp(0.5*(min(res[['AIC']])-res[['AIC']]))
-    w = matrix(w / sum(w))
-    res[['big.avg']] = beta %*% w
     
     #Filter the results:
     res[['df']] = df[best.index]
@@ -118,6 +114,17 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     res[['residuals']] = resid[,best.index]
     res[['dev.resid.values']] = dev.resid.values[,best.index]
     
+    #Get the AIC-optimal weights
+    w.lik = t(res[['residuals']]) %*% diag(weights) %*% res[['residuals']]
+    constraint.mat = cbind(1, diag(rep(1, length(best.index))))
+    constraint.vec = c(1, rep(0,length(best.index)))
+    res[['wAIC']] = solve.QP(w.lik, -res[['df']], constraint.mat, constraint.vec, meq=1)$solution
+
+    #Big average based on a selection criterion:
+    w = res[['wAIC']] #exp(0.5*(min(res[['AIC']])-res[['AIC']]))
+    w = matrix(w / sum(w))
+    res[['big.avg']] = beta %*% w
+
     p.max = ncol(X)
     dispersion = sum(weights * dev.resid.values[,ncol(dev.resid.values)]^2) / (sum(weights)-p.max-1)
     res[['full.model.cov']] = dispersion * chol2inv(adamodel$qr$qr[1:p.max, 1:p.max])
