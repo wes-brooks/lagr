@@ -69,11 +69,38 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     
     #Create a new environment, in which we will store the likelihood trace from bandwidth selection.
     oo = new.env()
-    opt <- optimize(
+    #opt <- optimize(
+    #    lagr.tune.bw,
+    #    interval=c(beta1, beta2),
+    #    tol=tol.bw,
+    #    maximum=FALSE,
+    #    x=x,
+    #    y=y,
+    #    coords=coords,
+    #    dist=dist,
+    #    weights=w,
+    #    env=oo,
+    #    oracle=oracle,
+    #    family=family,
+    #    varselect.method=varselect.method,
+    #    kernel=kernel,
+    #    verbose=verbose,
+    #    bw.type=bw.type,
+    #    tol.loc=tol.loc,
+    #    min.dist=min.dist,
+    #    max.dist=max.dist,
+    #    resid.type=resid.type,
+    #    bwselect.method=bwselect.method,
+    #    lambda.min.ratio=lambda.min.ratio,
+    #    n.lambda=n.lambda, 
+    #    lagr.convergence.tol=lagr.convergence.tol,
+    #    lagr.max.iter=lagr.max.iter
+    #)
+    opt <- optim(
+        par = 0.25,
         lagr.tune.bw,
-        interval=c(beta1, beta2),
-        tol=tol.bw,
-        maximum=FALSE,
+        gr=NULL,
+        #maximum=FALSE,
         x=x,
         y=y,
         coords=coords,
@@ -94,12 +121,18 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
         lambda.min.ratio=lambda.min.ratio,
         n.lambda=n.lambda, 
         lagr.convergence.tol=lagr.convergence.tol,
-        lagr.max.iter=lagr.max.iter
+        lagr.max.iter=lagr.max.iter,
+        method="Brent",
+        lower=beta1,
+        upper=beta2,
+        control=list(reltol=tol.bw),
+        hessian=TRUE
     )
     trace = oo$trace[!duplicated(oo$trace[,1]),]
     rm(oo)
     
-    bdwt <- opt$minimum
+    #bdwt <- opt$minimum
+    bdwt <- opt$par
     res <- bdwt
-    return(list(bw=res, trace=trace, bwselect.method=bwselect.method, resid.type=resid.type, call=cl))
+    return(list(bw=res, trace=trace, bwselect.method=bwselect.method, resid.type=resid.type, call=cl, opt=opt))
 }
