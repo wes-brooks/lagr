@@ -24,7 +24,7 @@
 #'
 lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method, oracle, tuning, predict, simulation, n.lambda, lambda.min.ratio, lagr.convergence.tol, lagr.max.iter, verbose, kernel.weights=NULL, prior.weights=NULL, longlat=FALSE) {
     #Find which observations were made at the model location  
-    colocated = which(round(coords[,1],5) == round(as.numeric(loc[1]),5) & round(coords[,2],5) == round(as.numeric(loc[2]),5))
+    colocated = which(apply(coords, 1, function(cc) all(round(cc,5) == round(as.numeric(loc),5))))
 
     #Bail now if only one observation has weight:
     if (sum(kernel.weights)==length(colocated)) {
@@ -47,16 +47,19 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     raw.names = colnames(x)
     interact.names = vector()
     for (l in 1:length(raw.names)) {
-        interact.names = c(interact.names, paste(raw.names[l], ":", colnames(coords)[1], sep=""))
-        interact.names = c(interact.names, paste(raw.names[l], ":", colnames(coords)[2], sep=""))
+        for (ll in 1:ncol(coords)) {
+            interact.names = c(interact.names, paste(raw.names[l], ":", colnames(coords)[ll], sep=""))
+        }
     }
 
     #Compute the covariate-by-location interactions
-    interacted = matrix(0, ncol=2*ncol(x), nrow=nrow(x))
+    q = ncol(coords)
+    interacted = matrix(0, ncol=q*ncol(x), nrow=nrow(x))
     for (k in 1:ncol(x)) {
-        interacted[,2*(k-1)+1] = x[,k]*(coords[,1]-loc[[1]])
-        interacted[,2*k] = x[,k]*(coords[,2]-loc[[2]])
-        group.id = c(group.id, group.id[k], group.id[k])
+        for (ll in 1:q) {
+            interacted[,q*(k-1)+ll] = x[,k]*(coords[,ll]-loc[[ll]])
+            group.id = c(group.id, group.id[k])
+        }
     }
     x.interacted = cbind(x, interacted)
     colnames(x.interacted) = c(raw.names, interact.names)
@@ -75,7 +78,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
 
     #Instantiate objects to store our output
     tunelist = list()
-    
+
     if (is.null(oracle)) {
         #Use the adaptive group lasso to produce a local model:
         model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=group.id, family=family, maxit=lagr.max.iter, delta=2, nlam=n.lambda, min.frac=lambda.min.ratio, thresh=lagr.convergence.tol, unpenalized=unpen)

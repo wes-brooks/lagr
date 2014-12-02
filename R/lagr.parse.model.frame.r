@@ -45,7 +45,7 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
             stop("Observation coordinates have to be given")
         
         # Get the coords from the data:
-        if (coords.is.char) coords = data[,coords]
+        if (coords.is.char) coords = cbind(data[,coords])
         else {
             coords.expression = substitute(coords, env=sys.frame(sys.parent()))
             coords.expression[[1]] = as.name('cbind')
@@ -58,23 +58,37 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
     }
     
     # Get the matrices of distances and weights
+    coords = as.matrix(coords)
+    q = ncol(coords)
     D.coords = rbind(coords, fit.loc)
     n = nrow(D.coords)
-    if (longlat) {
-        D = as.matrix(earth.dist(D.coords),n,n)
-    } else {
-        Xmat = matrix(rep(D.coords[,1], times=n), n, n)
-        Ymat = matrix(rep(D.coords[,2], times=n), n, n)
-        D = sqrt((Xmat-t(Xmat))**2 + (Ymat-t(Ymat))**2)
+
+    #Two dimensional effect modifying parameter:
+    if (q==2) {
+        if (longlat) {
+            D = as.matrix(earth.dist(D.coords),n,n)
+        } else {
+            Xmat = matrix(rep(D.coords[,1], times=n), n, n)
+            Ymat = matrix(rep(D.coords[,2], times=n), n, n)
+            D = sqrt((Xmat-t(Xmat))**2 + (Ymat-t(Ymat))**2)
+        }
+
+        # Find the possible range of bandwidths (for use with the adaptive bandwith methods - knn or nen)
+        bbox <- cbind(range(coords[, 1]), range(coords[, 2]))
+        difmin <- spDistsN1(bbox, bbox[2, ], longlat)[1]
+        if (any(!is.finite(difmin))) 
+            difmin[which(!is.finite(difmin))] <- 0
+        min.dist = difmin / 300
+        max.dist = 10 * difmin
+
+    } else if (q==1) {
+        #One dimensional effect modifying parameter:
+        Xmat = matrix(rep(D.coords, times=n), n, n)
+        D = abs(Xmat - t(Xmat))
+
+        max.dist = 10 * max(D)
+        min.dist = max.dist / 3000
     }
-    
-    # Find the possible range of bandwidths (for use with the adaptive bandwith methods - knn or nen)
-    bbox <- cbind(range(coords[, 1]), range(coords[, 2]))
-    difmin <- spDistsN1(bbox, bbox[2, ], longlat)[1]
-    if (any(!is.finite(difmin))) 
-        difmin[which(!is.finite(difmin))] <- 0
-    min.dist = difmin / 300
-    max.dist = 10 * difmin
     
     # Get the data and the weights
     y <- model.response(mf, "numeric")
@@ -91,5 +105,5 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
     if (any(w < 0)) 
         stop("negative weights")
     
-    return(list(x=x, y=y, w=w, family=family, coords=coords, dist=D, max.dist=max.dist, min.dist=min.dist, mt=mt))
+    return(list(x=x, y=y, w=w, family=family, coords=coords, dist=D, max.dist=max.dist, min.dist=min.dist, mt=mt, dim=q))
 }

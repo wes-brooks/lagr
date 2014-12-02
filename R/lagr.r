@@ -42,7 +42,7 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
     resid.type = match.arg(resid.type)
     bw.type = match.arg(bw.type)
     varselect.method = match.arg(varselect.method)
-      
+    
     #Fit the model:
     res = list()
     res[['model']] = lagr.dispatch(
