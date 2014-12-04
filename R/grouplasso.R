@@ -129,7 +129,7 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     res[['dispersion']] = dispersion = sum(weights * dev.resid.values[,ncol(dev.resid.values)]^2) / (sum(weights)-p.max-1)
     res[['full.model.cov']] = dispersion * chol2inv(adamodel$qr$qr[1:p.max, 1:p.max])
     
-    Sol <- list(beta=beta, lambda=Sol$lambda[best.index], intercept=intercept, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res)
+    Sol <- list(beta=beta, lambda=Sol$lambda[best.index], intercept=intercept, LS.coefs=adapt, adaweights=adaweights, weights=weights, results=res, adamodel=adamodel)
     
     class(Sol) = "grouplasso"
     return(Sol)
