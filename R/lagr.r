@@ -14,7 +14,6 @@
 #' @param bw.type type of bandwidth - options are \code{dist} for distance (the default), \code{knn} for nearest neighbors (bandwidth a proportion of \code{n}), and \code{nen} for nearest effective neighbors (bandwidth a proportion of the sum of squared residuals from a global model)
 #' @param tol.loc tolerance for the tuning of an adaptive bandwidth (e.g. \code{knn} or \code{nen})
 #' @param varselect.method criterion to minimize in the regularization step of fitting local models - options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}
-#' @param resid.type type of residual to use (relevant for non-gaussian response) - options are \code{deviance} and \code{pearson}
 #' @param tuning logical indicating whether this model will be used to tune the bandwidth, in which case only the tuning criteria are returned
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
@@ -22,7 +21,7 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, resid.type=c('deviance','pearson'), lambda.min.ratio=0.00001, n.lambda=40, lagr.convergence.tol=0.1, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     na.action = substitute(na.action)[1]
@@ -39,13 +38,18 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
     family = mf$family
     
     #Set some variables that determine how we fit the model
-    resid.type = match.arg(resid.type)
-    bw.type = match.arg(bw.type)
     varselect.method = match.arg(varselect.method)
+    
+    if (is(bw, 'lagr.bw')) {
+        bw.type = bw$bw.type
+        bw = bw$bw
+    } else {
+        bw.type = match.arg(bw.type)
+    }
     
     #Fit the model:
     res = list()
-    res[['model']] = lagr.dispatch(
+    res[['fits']] = lagr.dispatch(
         x=x,
         y=y,
         family=family,

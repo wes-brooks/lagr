@@ -12,12 +12,11 @@
 #' @param tol.loc tolerance for the tuning of an adaptive bandwidth (e.g. \code{knn} or \code{nen})
 #' @param bw.type type of bandwidth - options are \code{dist} for distance (the default), \code{knn} for nearest neighbors (bandwidth a proportion of \code{n}), and \code{nen} for nearest effective neighbors (bandwidth a proportion of the sum of squared residuals from a global model)
 #' @param bwselect.method criterion to minimize when tuning bandwidth - options are \code{AICc}, \code{BICg}, and \code{GCV}
-#' @param resid.type type of residual to use (relevant for non-gaussian response) - options are \code{deviance} and \code{pearson}
 #' @param verbose print detailed information about our progress?
 #' 
 #' @return value of the \code{bwselect.method} criterion for the given bandwidth
 #' 
-lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, resid.type, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, verbose) {    
+lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, oracle, varselect.method, tol.loc, bw.type, bwselect.method, min.dist, max.dist, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, verbose) {    
     #Fit the model with the given bandwidth:
     cat(paste('Bandwidth: ', round(bw, 3), '; ', sep=""))
 
@@ -48,8 +47,7 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         kernel=kernel,
         min.dist=min.dist,
         max.dist=max.dist,
-        tol.loc=tol.loc,
-        resid.type=resid.type,
+        tol.loc=tol.loc,,
         lambda.min.ratio=lambda.min.ratio,
         n.lambda=n.lambda, 
         lagr.convergence.tol=lagr.convergence.tol,
@@ -59,30 +57,25 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
     # Compute the model degrees of freedom
     n = nrow(x)
     df = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']], 1)))
-    dispersion = sum(sapply(lagr.model, function(x) x[['tunelist']][['dispersion']]))
+    dispersion = mean(sapply(lagr.model, function(x) x[['tunelist']][['dispersion']]))
 
-    if (bwselect.method != 'jacknife') {
-        #Model-averaging the fitted values:
-        fitted = sapply(lagr.model, function(x) {
-            crit = x[['tunelist']][['criterion']]
-            if (varselect.method %in% c("AIC", "AICc")) {
-                crit.weights = exp(-0.5*(min(crit)-crit)**2)
-            } else if (varselect.method == "wAIC") {
-                crit.weights = crit
-            }
-            sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights)
-        })
+    if (bwselect.method != 'jacknife') {    
+        fitted = vector()
+        df = 0
         
-        #Model-averaging the degrees of freedom
-        df = sum(sapply(lagr.model, function(x) {
-            crit = x[['tunelist']][['criterion']]
+        #Compute model-average fitted values and degrees of freedom:
+        for (x in lagr.model) {
+            #Compiute the model-averaging weights:
+            crit = x[['tunelist']][['criterion']]        
             if (varselect.method %in% c("AIC", "AICc")) {
                 crit.weights = exp(-0.5*(min(crit)-crit)**2)
             } else if (varselect.method == "wAIC") {
-                crit.weights = crit
+                crit.weights = -crit
             }
-            sum((1+x[['model']][['results']][['df']]) / x[['weightsum']] * crit.weights) / sum(crit.weights)
-        }))
+            
+            fitted = c(fitted, sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights))
+            df = df + sum((1+x[['model']][['results']][['df']]) * crit.weights / x[['weightsum']] ) / sum(crit.weights)
+        }
 
         dev.resids = family$dev.resids(y, fitted, weights)
         ll = family$aic(y, n, fitted, weights, sum(dev.resids))
@@ -96,19 +89,8 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
             loss = ll
         } else if (bwselect.method=='CV') {
             loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
-        } else if (bwselect.method=='BICg') {
+        } else if (bwselect.method=='BIC') {
             loss = ll + log(n)*df
-            #trH = sum(sapply(lagr.model, function(x) {
-            #    dispersion = x[['tunelist']][['dispersion']]
-            #    if (family=='gaussian') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) / dispersion }
-            #    else if (family=='binomial') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) }
-            #    else if (family=='poisson') { ll = min(x[['tunelist']][['ssr-loc']][[resid.type]]) /  }
-            #    df = x[['tunelist']][['df']]
-            #    return(ll + log(x[['tunelist']][['n']]) * df / x[['tunelist']][['n']])
-            #}))
-            #loss = trH + sum(sapply(lagr.model, function(x) min(x[['tunelist']][['ssr-loc']][[resid.type]])))
-            #"Simplistic" BIC - based on eq4.22 from the Fotheringham et al. book:
-            #loss = nrow(x) * (log(mean(sapply(lagr.model, function(x) {x[['ssr.local']]}))) + 1 + log(2*pi)) + trH * log(nrow(x))/2
         }
     } else {
         fitted = sapply(1:n, function(k) sum(lagr.model[[k]][['coefs']] * cbind(1, x[k,])))

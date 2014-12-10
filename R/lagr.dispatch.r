@@ -12,12 +12,11 @@
 #' @param bw.type type of bandwidth - options are \code{dist} for distance (the default), \code{knn} for nearest neighbors (bandwidth a proportion of \code{n}), and \code{nen} for nearest effective neighbors (bandwidth a proportion of the sum of squared residuals from a global model)
 #' @param tol.loc tolerance for the tuning of an adaptive bandwidth (e.g. \code{knn} or \code{nen})
 #' @param varselect.method criterion to minimize in the regularization step of fitting local models - options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}
-#' @param resid.type type of residual to use (relevant for non-gaussian response) - options are \code{deviance} and \code{pearson}
 #' @param tuning logical indicating whether this model will be used to tune the bandwidth, in which case only the tuning criteria are returned
 #' @param D pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
 #' 
-lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, resid.type, jacknife=FALSE, bootstrap.index=NULL) {
+lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, verbose, varselect.method, prior.weights, tuning, predict, simulation, kernel, min.bw, max.bw, min.dist, max.dist, tol.loc, lambda.min.ratio, n.lambda, lagr.convergence.tol, lagr.max.iter, jacknife=FALSE, bootstrap.index=NULL) {
     if (!is.null(fit.loc)) { coords.fit = fit.loc }
     else { coords.fit = coords }
     n = nrow(coords.fit)
@@ -35,7 +34,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
 
     group.id = attr(x, 'assign')
     
-    models = foreach(i=1:n, .errorhandling='pass') %dopar% {
+    models = foreach(i=1:n, .errorhandling='stop') %dopar% {
         if (!is.null(fit.loc)) {
             dist = drop(D[nrow(coords)+i,1:nrow(coords)])
         } else { dist = drop(D[i,]) }
@@ -99,7 +98,6 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
                 kernel=kernel,
                 target=bw,
                 varselect.method=varselect.method,
-                resid.type=resid.type,
                 oracle=oracle,
                 prior.weights=prior.weights[indx],
                 verbose=verbose,

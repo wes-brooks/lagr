@@ -14,7 +14,12 @@ Depends:
     foreach,
     sp,
     pryr,
-    quadprog
+    quadprog,
+    deldir,
+    mapproj,
+    scales,
+    gridExtra,
+    ggplot2
 Suggests:
     testthat,
     knitr

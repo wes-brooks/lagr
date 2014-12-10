@@ -19,7 +19,6 @@
 #' @param tol.bw global error tolerance for minimizing the bandwidth selection criterion
 #' @param tol.loc local error tolerance for converting an adaptive bandwidth (e.g. \code{knn} or \code{nen}) to a distance
 #' @param varselect.method criterion to minimize in the regularization step of fitting local models - options are \code{AIC}, \code{AICc}, \code{BIC}, \code{GCV}
-#' @param resid.type type of residual to use (relevant for non-gaussian response) - options are \code{deviance} and \code{pearson}
 #' @param tuning logical indicating whether this model will be used to tune the bandwidth, in which case only the tuning criteria are returned
 #' @param a pre-specified matrix of distances between locations
 #' @param verbose print detailed information about our progress?
@@ -27,7 +26,10 @@
 #' @return \code{list(bw, trace)} where \code{bw} minimizes the bandwidth selection criterion and trace is a data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
 #' 
 #' @export
-lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc','jacknife','wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BICg'), resid.type=c('deviance','pearson'), lambda.min.ratio=0.00001, n.lambda=40, lagr.convergence.tol=0.1, lagr.max.iter=20, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc','jacknife','wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BIC'), lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+    result = list()
+    class(result) <- "lagr.bw"
+    
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     na.action = substitute(na.action)[1]
@@ -46,8 +48,7 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     bw.type = match.arg(bw.type)
     varselect.method = match.arg(varselect.method)
     bwselect.method = match.arg(bwselect.method)
-    resid.type = match.arg(resid.type)
-    
+        
     if (!is.null(range)) {
         beta1 = min(range)
         beta2 = max(range)
@@ -69,33 +70,6 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     
     #Create a new environment, in which we will store the likelihood trace from bandwidth selection.
     oo = new.env()
-    #opt <- optimize(
-    #    lagr.tune.bw,
-    #    interval=c(beta1, beta2),
-    #    tol=tol.bw,
-    #    maximum=FALSE,
-    #    x=x,
-    #    y=y,
-    #    coords=coords,
-    #    dist=dist,
-    #    weights=w,
-    #    env=oo,
-    #    oracle=oracle,
-    #    family=family,
-    #    varselect.method=varselect.method,
-    #    kernel=kernel,
-    #    verbose=verbose,
-    #    bw.type=bw.type,
-    #    tol.loc=tol.loc,
-    #    min.dist=min.dist,
-    #    max.dist=max.dist,
-    #    resid.type=resid.type,
-    #    bwselect.method=bwselect.method,
-    #    lambda.min.ratio=lambda.min.ratio,
-    #    n.lambda=n.lambda, 
-    #    lagr.convergence.tol=lagr.convergence.tol,
-    #    lagr.max.iter=lagr.max.iter
-    #)
     opt <- optim(
         par = 0.25,
         lagr.tune.bw,
@@ -116,7 +90,6 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
         tol.loc=tol.loc,
         min.dist=min.dist,
         max.dist=max.dist,
-        resid.type=resid.type,
         bwselect.method=bwselect.method,
         lambda.min.ratio=lambda.min.ratio,
         n.lambda=n.lambda, 
@@ -130,9 +103,14 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     )
     trace = oo$trace[!duplicated(oo$trace[,1]),]
     rm(oo)
-    
-    #bdwt <- opt$minimum
+
     bdwt <- opt$par
-    res <- bdwt
-    return(list(bw=res, trace=trace, bwselect.method=bwselect.method, resid.type=resid.type, call=cl, opt=opt))
+    result[['bw']] <- bdwt
+    result[['trace']] <- trace
+    result[['bwselect.method']] <- bwselect.method
+    result[['call']] <- cl
+    result[['opt']] <- opt
+    result[['bw.type']] = bw.type
+    
+    return(result)
 }

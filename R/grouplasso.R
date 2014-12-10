@@ -118,10 +118,10 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     w.lik = t(res[['residuals']]) %*% diag(weights) %*% res[['residuals']]
     constraint.mat = cbind(1, diag(rep(1, length(best.index))))
     constraint.vec = c(1, rep(0,length(best.index)))
-    res[['wAIC']] = solve.QP(w.lik, -res[['df']], constraint.mat, constraint.vec, meq=1)$solution
+    res[['wAIC']] = -solve.QP(w.lik, -res[['df']], constraint.mat, constraint.vec, meq=1)$solution
 
     #Big average based on a selection criterion:
-    w = res[['wAIC']] #exp(0.5*(min(res[['AIC']])-res[['AIC']]))
+    w = -res[['wAIC']] #exp(0.5*(min(res[['AIC']])-res[['AIC']]))
     w = matrix(w / sum(w))
     res[['big.avg']] = beta %*% w
 
