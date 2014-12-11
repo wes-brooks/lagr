@@ -124,6 +124,7 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     w = -res[['wAIC']] #exp(0.5*(min(res[['AIC']])-res[['AIC']]))
     w = matrix(w / sum(w))
     res[['big.avg']] = beta %*% w
+    res[['is.zero']] = (beta==0) %*% w
 
     p.max = ncol(X)
     res[['dispersion']] = dispersion = sum(weights * dev.resid.values[,ncol(dev.resid.values)]^2) / (sum(weights)-p.max-1)

@@ -22,6 +22,9 @@
 #' 
 #' @export
 lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+    result = list()
+    class(result) = "lagr"
+    
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     na.action = substitute(na.action)[1]
@@ -48,8 +51,7 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
     }
     
     #Fit the model:
-    res = list()
-    res[['fits']] = lagr.dispatch(
+    result[['fits']] = lagr.dispatch(
         x=x,
         y=y,
         family=family,
@@ -77,27 +79,35 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
         bootstrap.index=bootstrap.index
     )
     
+    coefs = as.data.frame(t(sapply(result[['fits']], function(x) x[['model']][['results']][['big.avg']])))
+    is.zero = as.data.frame(t(sapply(result[['fits']], function(x) x[['model']][['results']][['is.zero']])))
+    varnames = rownames(result[['fits']][[1]]$coef)
+    colnames(coefs) = varnames
+    colnames(is.zero) = varnames
+    
     #Store results from model fitting:
     if (!tuning) {
-        res[['data']] = data
-        res[['response']] = as.character(formula[[2]])
-        res[['family']] = family
-        res[['weights']] = w
-        res[['coords']] = coords
-        res[['fit.locs']] = fit.loc
-        res[['longlat']] = longlat
-        res[['kernel']] = kernel
-        res[['bw']] = bw
-        res[['bw.type']] = bw.type
-        res[['varselect.method']] = varselect.method
+        result[['data']] = data
+        result[['response']] = as.character(formula[[2]])
+        result[['family']] = family
+        result[['weights']] = w
+        result[['coords']] = coords
+        result[['fit.locs']] = fit.loc
+        result[['longlat']] = longlat
+        result[['kernel']] = kernel
+        result[['bw']] = bw
+        result[['bw.type']] = bw.type
+        result[['varselect.method']] = varselect.method
+        result[['dim']] = mf$dim
+        result[['coefs']] = coefs
+        result[['is.zero']] = is.zero
         
-        res[['na.action']] <- attr(mf, "na.action")
-        res[['contrasts']] <- attr(x, "contrasts")
-        res[['xlevels']] <- .getXlevels(mt, mf)
-        res[['call']] <- cl
-        res[['terms']] <- mt
+        result[['na.action']] <- attr(mf, "na.action")
+        result[['contrasts']] <- attr(x, "contrasts")
+        result[['xlevels']] <- .getXlevels(mt, mf)
+        result[['call']] <- cl
+        result[['terms']] <- mt
     }
-    class(res) = "lagr"
     
-    res
+    return(result)
 }

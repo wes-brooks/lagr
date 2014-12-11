@@ -72,7 +72,7 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
         squaredist = matrix(0,n,n)
         D.coords = as.matrix(D.coords)
         
-        for (c in 1:ncol(as.matrix(coords))) {
+        for (c in 1:q) {
             this.coord = matrix(rep(D.coords[,c], times=n), n, n)
             squaredist = squaredist + (this.coord-t(this.coord))**2
         }
