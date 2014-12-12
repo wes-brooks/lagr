@@ -1,4 +1,7 @@
-plot.lagr = function(obj, target, type=c("raw", "coef", "is.zero"), id="id") {
+#' Plot a lagr object
+#'
+#' @export
+plot.lagr <- function(obj, target, type=c("raw", "coef", "is.zero"), id="id") {
     
     
     #Follow here for a one-dimensional effect-modifying parameter:
