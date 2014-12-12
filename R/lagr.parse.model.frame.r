@@ -25,7 +25,7 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
     mf = match.call(expand.dots=FALSE)
     m <- match(vars, names(mf), 0)
     mf <- mf[c(1, m)]
-    
+
     # We need to evaluate the function call in the next environment up because we've added a level of abstraction with this function.
     mf[[1]] <- as.name("model.frame")
     mf <- eval.parent(substitute_q(mf, env=sys.frame(sys.parent())))

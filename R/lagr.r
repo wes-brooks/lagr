@@ -21,13 +21,12 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=c(na.omit, na.fail, na.pass), contrasts=NULL) {
+lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=na.omit, contrasts=NULL) {
     result = list()
     class(result) = "lagr"
     
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
-    na.action = substitute(na.action)[1]
     mf = eval(lagr.parse.model.frame(formula, data, family, weights, coords, fit.loc, longlat, na.action, contrasts))
 
     y = mf$y
