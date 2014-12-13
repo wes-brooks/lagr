@@ -21,7 +21,7 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=na.omit, contrasts=NULL) {
+lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=na.fail, contrasts=NULL) {
     result = list()
     class(result) = "lagr"
     
@@ -78,9 +78,9 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
         bootstrap.index=bootstrap.index
     )
     
-    coefs = as.data.frame(t(sapply(result[['fits']], function(x) x[['model']][['results']][['big.avg']])))
-    is.zero = as.data.frame(t(sapply(result[['fits']], function(x) x[['model']][['results']][['is.zero']])))
-    varnames = rownames(result[['fits']][[1]]$coef)
+    coefs = as.data.frame(t(sapply(result[['fits']], function(x) x[['coef']])))
+    is.zero = as.data.frame(t(sapply(result[['fits']], function(x) x[['conf.zero']])))
+    varnames = names(result[['fits']][[1]]$coef)
     colnames(coefs) = varnames
     colnames(is.zero) = varnames
     

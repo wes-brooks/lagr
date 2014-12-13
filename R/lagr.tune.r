@@ -26,7 +26,7 @@
 #' @return \code{list(bw, trace)} where \code{bw} minimizes the bandwidth selection criterion and trace is a data frame of each bandwidth that was tried during the optimization, along with the resulting degrees of freedom used inthe LAGR model and the value of the bandwidth selection criterion.
 #' 
 #' @export
-lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc','jacknife','wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BIC'), lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, na.action=na.omit, contrasts=NULL) {
+lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc','jacknife','wAIC'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BIC'), lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, na.action=na.fail, contrasts=NULL) {
     result = list()
     class(result) <- "lagr.bw"
     

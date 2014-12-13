@@ -103,16 +103,14 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     if (sumw > ncol(x)) {
         if (is.null(oracle)) {
             #Extract the fitted values for each lambda:
-            fitted = model[['results']][['fitted']]
-            dispersion = sum(w*(model[['results']][['residuals']][,ncol(fitted)])**2) / (sumw - tail(df,1)) 
+            dispersion = model[['results']][['dispersion']] 
 
             #Using the grouplasso's criteria:
             loss = model[['results']][[varselect.method]]
                 
             #Pick the lambda that minimizes the loss:
             k = which.min(loss)
-            #fitted = fitted[,k]
-            localfit = fitted[colocated,]
+            localfit = model[['results']][['fitted']][colocated,]
             df = df[k]
             if (k > 1) {
                 varset = vars[[k]]
@@ -127,7 +125,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
         tunelist[['dispersion']] = dispersion
         tunelist[['n']] = sumw
         tunelist[['df']] = df
-        tunelist[['df-local']] = df / sumw
+        tunelist[['df-local']] = length(colocated) * df / sumw
                   
     } else {
         fitted = rep(meany, nrow(xxx))
@@ -141,25 +139,44 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     if (is.null(oracle)) {
         coefs = Matrix(drop(model[['beta']]))
         rownames(coefs) = colnames(xxx)
-        #coefs = coefs[raw.names,]
+
+        #Use AIC weights, or not:
+        if (varselect.method=='wAIC') {
+            #Big average based on a selection criterion:
+            w = -model[['results']][['wAIC']]
+            w = matrix(w / sum(w))
+            coefs = (model[['beta']] %*% w)[1:length(orig.names)]
+            conf.zero = drop((model[['beta']]==0) %*% w)[1:length(orig.names)]
+        } else {
+            coefs = model[['beta']][1:length(orig.names),k]
+            conf.zero = as.numeric(coefs==0)
+
+        }
+
+        #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
+        nonzero = raw.names[which(raw.vargroup %in% unique(group.id[which(conf.zero!=1)]))]
+        nonzero = nonzero[nonzero != "(Intercept)"]
+
+        names(coefs) = raw.names
+        names(conf.zero) = colnames(raw.names)
     }
     else {
         coefs = rep(0, length(orig.names))
         names(coefs) = orig.names
         coefs[raw.names] = coef(model)[1:length(oracle)]
+        nonzero = raw.names
+        conf.zero = rep(0, length(orig.names))
+        names(conf.zero) = colnames(raw.names)
     }
     
-    #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
-    nonzero = raw.names[which(raw.vargroup %in% unique(group.id[vars[[k]]]))]
-    nonzero = nonzero[nonzero != "(Intercept)"]
   
     if (tuning) {
         return(list(tunelist=tunelist, model=model, s=k, dispersion=dispersion, nonzero=nonzero, weightsum=sumw, loss=loss))
     } else if (predict) {
-        return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, dispersion=dispersion, nonzero=nonzero))
+        return(list(tunelist=tunelist, coef=coefs, weightsum=sumw, s=k, dispersion=dispersion, nonzero=nonzero, conf.zero=conf.zero))
     } else if (simulation) {
-        return(list(tunelist=tunelist, coef=coefs, s=k, dispersion=dispersion, fitted=localfit, nonzero=nonzero, actual=yyy[colocated], weightsum=sumw, loss=loss))
+        return(list(tunelist=tunelist, coef=coefs, s=k, dispersion=dispersion, fitted=localfit, nonzero=nonzero, conf.zero=conf.zero, actual=yyy[colocated], weightsum=sumw, loss=loss))
     } else {
-        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, s=k, loc=loc, df=df, loss.local=loss, dispersion=dispersion, fitted=localfit, weightsum=sumw, tunelist=tunelist))
+        return(list(model=model, loss=loss, coef=coefs, nonzero=nonzero, conf.zero=conf.zero, s=k, loc=loc, df=df, loss.local=loss, dispersion=dispersion, fitted=localfit, weightsum=sumw, tunelist=tunelist))
     }
 }

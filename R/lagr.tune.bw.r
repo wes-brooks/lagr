@@ -67,8 +67,8 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         for (x in lagr.model) {
             #Compiute the model-averaging weights:
             crit = x[['tunelist']][['criterion']]        
-            if (varselect.method %in% c("AIC", "AICc")) {
-                crit.weights = exp(-0.5*(min(crit)-crit)**2)
+            if (varselect.method %in% c("AIC", "AICc", "BIC")) {
+                crit.weights = as.numeric(crit==min(crit))
             } else if (varselect.method == "wAIC") {
                 crit.weights = -crit
             }
@@ -99,7 +99,9 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
     }
     
     res = mget('trace', env=env, ifnotfound=list(matrix(NA, nrow=0, ncol=3)))
-    res$trace = rbind(res$trace, c(bw, loss, df))
+    res$trace = as.data.frame(rbind(res$trace, c(bw, loss, df)))
+    colnames(res$trace) = c("bw", "loss", "df")
+    res$trace = res$trace[order(res$trace$bw),]
     assign('trace', res$trace, env=env)
     
     cat(paste('df: ', round(df,4), '; Loss: ', signif(loss, 5), '\n', sep=''))

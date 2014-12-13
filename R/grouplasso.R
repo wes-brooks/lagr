@@ -89,7 +89,6 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     
     #res[['df']] = df = apply(group.df, 2, sum)
     #Naive df (add one for the intercept, which is estimated but does not appear in b)
-    res[['dispersion']] = dispersion
     df = drop(apply(beta, 2, function(b) sum(b!=0) + 1))
     ll = apply(dev.resid.values, 2, sum) / dispersion
     res[['BIC']] = ll + log(sum(weights))*df
@@ -111,20 +110,14 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     beta = beta[,best.index]
     intercept = intercept[best.index]
     res[['fitted']] = fitted[,best.index]
-    res[['residuals']] = resid[,best.index]
-    res[['dev.resid.values']] = dev.resid.values[,best.index]
+    residuals = resid[,best.index]
+    dev.resid.values = dev.resid.values[,best.index]
     
     #Get the AIC-optimal weights
-    w.lik = t(res[['residuals']]) %*% diag(weights) %*% res[['residuals']]
+    w.lik = sqrt(t(dev.resid.values)) %*% sqrt(dev.resid.values) / dispersion
     constraint.mat = cbind(1, diag(rep(1, length(best.index))))
     constraint.vec = c(1, rep(0,length(best.index)))
     res[['wAIC']] = -solve.QP(w.lik, -res[['df']], constraint.mat, constraint.vec, meq=1)$solution
-
-    #Big average based on a selection criterion:
-    w = -res[['wAIC']] #exp(0.5*(min(res[['AIC']])-res[['AIC']]))
-    w = matrix(w / sum(w))
-    res[['big.avg']] = beta %*% w
-    res[['is.zero']] = (beta==0) %*% w
 
     p.max = ncol(X)
     res[['dispersion']] = dispersion = sum(weights * dev.resid.values[,ncol(dev.resid.values)]^2) / (sum(weights)-p.max-1)
