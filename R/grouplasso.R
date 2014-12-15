@@ -118,7 +118,12 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     constraint.mat = cbind(1, diag(rep(1, length(best.index))))
     constraint.vec = c(1, rep(0,length(best.index)))
     res[['wAIC']] = -solve.QP(w.lik, -res[['df']], constraint.mat, constraint.vec, meq=1)$solution
+    res[['wAIC']][res[['wAIC']]>0] = 0
 
+    #Get the AICc-optimal weights
+    res[['wAICc']] = -solve.QP(w.lik, -res[['df']]-res[['df']]*(res[['df']]+1)/(sum(weights)-res[['df']]-1), constraint.mat, constraint.vec, meq=1)$solution
+    res[['wAICc']][res[['wAICc']]>0] = 0
+    
     p.max = ncol(X)
     res[['dispersion']] = dispersion = sum(weights * dev.resid.values[,ncol(dev.resid.values)]^2) / (sum(weights)-p.max-1)
     res[['full.model.cov']] = dispersion * chol2inv(adamodel$qr$qr[1:p.max, 1:p.max])

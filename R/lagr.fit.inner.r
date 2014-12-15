@@ -141,9 +141,9 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
         rownames(coefs) = colnames(xxx)
 
         #Use AIC weights, or not:
-        if (varselect.method=='wAIC') {
+        if (varselect.method %in% c('wAIC','wAICc')) {
             #Big average based on a selection criterion:
-            w = -model[['results']][['wAIC']]
+            w = -model[['results']][[varselect.method]]
             w = matrix(w / sum(w))
             coefs = (model[['beta']] %*% w)[1:length(orig.names)]
             conf.zero = drop((model[['beta']]==0) %*% w)[1:length(orig.names)]

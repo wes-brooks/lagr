@@ -69,7 +69,7 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
             crit = x[['tunelist']][['criterion']]        
             if (varselect.method %in% c("AIC", "AICc", "BIC")) {
                 crit.weights = as.numeric(crit==min(crit))
-            } else if (varselect.method == "wAIC") {
+            } else if (varselect.method %in% c("wAIC", "wAICc")) {
                 crit.weights = -crit
             }
             

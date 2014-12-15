@@ -24,6 +24,9 @@ plot.lagr <- function(obj, target, type=c("raw", "coef", "is.zero"), id="id") {
         
         if (is(obj$data, "Spatial")) {
             polygons = obj$data
+            if (!(id %in% colnames(polygons@data))) {
+                polygons@data[[id]] = rownames(polygons@data)
+            }
         } else {
             #If the data was not specified as a spatial data frame, make a Voronoi diagram:
             crds = obj$coords
@@ -34,12 +37,12 @@ plot.lagr <- function(obj, target, type=c("raw", "coef", "is.zero"), id="id") {
             for (i in seq(along=polys)) {
                 pcrds = cbind(w[[i]]$x, w[[i]]$y)
                 pcrds = rbind(pcrds, pcrds[1,])
-                polys[[i]] = Polygons(list(Polygon(pcrds)), ID=as.character(i))
+                polys[[i]] = Polygons(list(Polygon(pcrds)), id=as.character(i))
             }
             SP = SpatialPolygons(polys)
             polygons = SpatialPolygonsDataFrame(SP, data=data.frame(x=crds[,1], 
                 y=crds[,2], row.names=sapply(slot(SP, 'polygons'), 
-                function(x) slot(x, 'ID'))))
+                function(x) slot(x, 'id'))))
             
             polygons@data$id = rownames(polygons@data)
         } 
@@ -55,14 +58,14 @@ plot.lagr <- function(obj, target, type=c("raw", "coef", "is.zero"), id="id") {
         
         #Repair any holes in the shapefile:
         slot(polygons, "polygons") <- lapply(slot(polygons, "polygons"), checkPolygonsHoles)
-        polygons2 <- unionSpatialPolygons(polygons, as.character(polygons[[id]]))
+        polygons2 <- unionSpatialPolygons(polygons, as.character(polygons@data[[id]]))
         
         points = fortify(polygons2, region=id)
-        names(points)[which(names(points)=='id')] = id
-        df = join(points, polygons@data, by=id)      
+#        names(points)[which(names(points)=='id')] = id
+        df = inner_join(points, polygons@data, by=id)      
         
         #Plot the shapes:
-        ggplot(df, aes_string("long", "lat", group=id, fill=paste(".", target, sep=""))) + geom_polygon() +
+        ggplot(df, aes_string("long", "lat", group='group', fill=paste(".", target, sep=""))) + geom_polygon() +
             scale_fill_gradient2(low=muted("blue"), mid="white", high="orange", limits=range(polygons@data[[paste(".", target, sep="")]], na.rm=TRUE), name="")
 
     }
