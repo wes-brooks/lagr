@@ -111,6 +111,7 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     result[['opt']] <- opt
     result[['bw.type']] = bw.type
     result[['dim']] = mf$dim
+    result[['kernel']] = kernel
     
     return(result)
 }

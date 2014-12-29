@@ -28,7 +28,7 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
     }
 
 
-    lagr.model = lagr.dispatch(
+    vcr.model = lagr.dispatch(
         x=x,
         y=y,
         coords=coords,
@@ -54,56 +54,55 @@ lagr.tune.bw = function(x, y, weights, coords, dist, family, bw, kernel, env, or
         lagr.max.iter=lagr.max.iter
     )
     
-    # Compute the model degrees of freedom
-    n = nrow(x)
-    df = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']], 1)))
-    dispersion = mean(sapply(lagr.model, function(x) x[['tunelist']][['dispersion']]))
-
-    if (bwselect.method != 'jacknife') {    
-        fitted = vector()
-        df = 0
-        
-        #Compute model-average fitted values and degrees of freedom:
-        for (x in lagr.model) {
-            #Compiute the model-averaging weights:
-            crit = x[['tunelist']][['criterion']]        
-            if (varselect.method %in% c("AIC", "AICc", "BIC")) {
-                crit.weights = as.numeric(crit==min(crit))
-            } else if (varselect.method %in% c("wAIC", "wAICc")) {
-                crit.weights = -crit
-            }
-            
-            fitted = c(fitted, sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights))
-            df = df + sum((1+x[['model']][['results']][['df']]) * crit.weights / x[['weightsum']] ) / sum(crit.weights)
-        }
-
-        dev.resids = family$dev.resids(y, fitted, weights)
-        ll = family$aic(y, n, fitted, weights, sum(dev.resids))
-    
-        #Compute the loss at this bandwidth
-        if (bwselect.method=='AICc') {
-            loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
-        } else if (bwselect.method=='AIC') {
-            loss = ll + 2*df
-        } else if (bwselect.method=='GCV') {
-            loss = ll
-        } else if (bwselect.method=='CV') {
-            loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
-        } else if (bwselect.method=='BIC') {
-            loss = ll + log(n)*df
-        }
-    } else {
-        fitted = sapply(1:n, function(k) sum(lagr.model[[k]][['coefs']] * cbind(1, x[k,])))
-        dev.resids = family$dev.resids(y, fitted, weights)
-        loss = sum(family$aic(y, n, fitted, weights, sum(dev.resids)))
-    }
+#    # Compute the model degrees of freedom
+#    n = nrow(x)
+#    df = sum(sapply(lagr.model, function(x) tail(x[['tunelist']][['df-local']], 1)))
+#
+#    if (bwselect.method != 'jacknife') {    
+#        fitted = vector()
+#        df = 0
+#        
+#        #Compute model-average fitted values and degrees of freedom:
+#        for (x in lagr.model) {
+#            #Compiute the model-averaging weights:
+#            crit = x[['tunelist']][['criterion']]        
+#            if (varselect.method %in% c("AIC", "AICc", "BIC")) {
+#                crit.weights = as.numeric(crit==min(crit))
+#            } else if (varselect.method %in% c("wAIC", "wAICc")) {
+#                crit.weights = -crit
+#            }
+#            
+#            fitted = c(fitted, sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights))
+#            df = df + sum((1+x[['model']][['results']][['df']]) * crit.weights / x[['weightsum']] ) / sum(crit.weights)
+#        }
+#
+#        dev.resids = family$dev.resids(y, fitted, weights)
+#        ll = family$aic(y, n, fitted, weights, sum(dev.resids))
+#    
+#        #Compute the loss at this bandwidth
+#        if (bwselect.method=='AICc') {
+#            loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
+#        } else if (bwselect.method=='AIC') {
+#            loss = ll + 2*df
+#        } else if (bwselect.method=='GCV') {
+#            loss = ll
+#        } else if (bwselect.method=='CV') {
+#            loss = ll + 2*df + 2*df*(df+1)/(n-df-1)
+#        } else if (bwselect.method=='BIC') {
+#            loss = ll + log(n)*df
+#        }
+#    } else {
+#        fitted = sapply(1:n, function(k) sum(lagr.model[[k]][['coefs']] * cbind(1, x[k,])))
+#        dev.resids = family$dev.resids(y, fitted, weights)
+#        loss = sum(family$aic(y, n, fitted, weights, sum(dev.resids)))
+#    }
     
     res = mget('trace', env=env, ifnotfound=list(matrix(NA, nrow=0, ncol=3)))
-    res$trace = as.data.frame(rbind(res$trace, c(bw, loss, df)))
+    res$trace = as.data.frame(rbind(res$trace, c(bw, vcr.model[[bwselect.method]], vcr.model$df)))
     colnames(res$trace) = c("bw", "loss", "df")
     res$trace = res$trace[order(res$trace$bw),]
     assign('trace', res$trace, env=env)
     
-    cat(paste('df: ', round(df,4), '; Loss: ', signif(loss, 5), '\n', sep=''))
-    return(loss)
+    cat(paste('df: ', round(vcr.model$df,4), '; Loss: ', signif(vcr.model[[bwselect.method]], 5), '\n', sep=''))
+    return(vcr.model[[bwselect.method]])
 }

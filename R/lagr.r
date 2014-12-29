@@ -21,7 +21,7 @@
 #' @return list containing the local models.
 #' 
 #' @export
-lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC', 'wAICc'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=na.fail, contrasts=NULL) {
+lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc=NULL, tuning=FALSE, predict=FALSE, simulation=FALSE, oracle=NULL, kernel=NULL, bw=NULL, varselect.method=c('AIC','BIC','AICc', 'wAIC', 'wAICc'), verbose=FALSE, longlat=FALSE, tol.loc=NULL, bw.type=c('dist','knn','nen'), D=NULL, lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, jacknife=FALSE, bootstrap.index=NULL, na.action=na.fail, contrasts=NULL) {
     result = list()
     class(result) = "lagr"
     
@@ -44,13 +44,14 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
     
     if (is(bw, 'lagr.bw')) {
         bw.type = bw$bw.type
+        kernel = bw$kernel
         bw = bw$bw
     } else {
         bw.type = match.arg(bw.type)
     }
     
     #Fit the model:
-    result[['fits']] = lagr.dispatch(
+    vcr.model = lagr.dispatch(
         x=x,
         y=y,
         family=family,
@@ -77,6 +78,9 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
         jacknife = jacknife,
         bootstrap.index=bootstrap.index
     )
+    
+    for (nn in names(vcr.model))
+        result[[nn]] = vcr.model[[nn]]
     
     coefs = as.data.frame(t(sapply(result[['fits']], function(x) x[['coef']])))
     is.zero = as.data.frame(t(sapply(result[['fits']], function(x) x[['conf.zero']])))

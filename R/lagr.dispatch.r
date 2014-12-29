@@ -21,7 +21,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
     else { coords.fit = coords }
     n = nrow(coords.fit)
 
-    lagr.object = list()
+    vcr.model = list()
 
     #For the adaptive bandwith methods, use a default tolerance if none is specified:
     if (is.null(tol.loc)) {tol.loc = bw / 1000}
@@ -138,10 +138,42 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         )
         if (verbose) {
             cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; dispersion=", round(tail(m[['dispersion']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))
-        }
+        }        
         m[['bw']] = bandwidth
         return(m)
     }
     
-    return(models)
+    vcr.model[['fits']] = models
+    
+    #Calculate information criteria:
+    fitted = vector()
+    df = 0
+    n = nrow(x)
+    
+    #Compute model-average fitted values and degrees of freedom:
+    for (x in models) {
+        #Compute the model-averaging weights:
+        crit = x[['tunelist']][['criterion']]        
+        if (varselect.method %in% c("AIC", "AICc", "BIC")) {
+            crit.weights = as.numeric(crit==min(crit))
+        } else if (varselect.method %in% c("wAIC", "wAICc")) {
+            crit.weights = -crit
+        }
+        
+        fitted = c(fitted, sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights))
+        df = df + sum((1+x[['model']][['results']][['df']]) * crit.weights / x[['weightsum']] ) / sum(crit.weights)
+    }
+
+    dev.resids = family$dev.resids(y, fitted, prior.weights)
+    ll = family$aic(y, n, fitted, prior.weights, sum(dev.resids))
+
+    #Compute the information criteria:
+    vcr.model[['AICc']] = ll + 2*df + 2*df*(df+1)/(n-df-1)
+    vcr.model[['AIC']] = ll + 2*df
+    vcr.model[['GCV']] = ll
+    vcr.model[['BIC']] = ll + log(n)*df
+
+    vcr.model[['df']] = df
+    
+    return(vcr.model)
 }
