@@ -16,10 +16,6 @@ double loglik(NumericVector eta, NumericVector y, NumericVector weights, Functio
     // Calculate the actual log likelihood:
     NumericVector dev_resids = devfun(y, mu, weights);
     double ll = sum(dev_resids);
-    
-    delete mu;
-    delete dev_resids;
-    
     return(ll);
 }
 
@@ -32,8 +28,6 @@ void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Functio
     
     // Calculate the actual log likelihood:
     ldot = weights * (mu-y) / sumw;
-    
-    delete mu;
 }
 
 
@@ -229,19 +223,9 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
                         }
                     }
                 }
-                delete z;
-                delete U;
-                delete delta;
-                delete betaNew;
             }
-            delete grad;
         }
     }
-    
-    delete theta;
-    delete etaNew;
-    delete etaNull;
-    delete var;
 }
 
 
@@ -313,15 +297,6 @@ int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector
                 outermostCheck = outermostCheck / abs(sum(outerOldBeta));
             }
         }
-        delete outerOldBeta;
     }
-    
-    delete prob;
-    delete nullBeta;
-    delete ldot;
-    delete isActive;
-    delete useGroup;
-    delete tempIsActive;
-    
     return 1;
 }
