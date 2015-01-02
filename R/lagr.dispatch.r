@@ -31,7 +31,7 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         prior.weights = drop(prior.weights)
         total.weight = sum(prior.weights)
     }
-
+    
     group.id = attr(x, 'assign')
     
     models = foreach(i=1:n, .errorhandling='stop') %dopar% {

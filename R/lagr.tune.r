@@ -69,11 +69,11 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     
     #Create a new environment, in which we will store the likelihood trace from bandwidth selection.
     oo = new.env()
-    opt <- optim(
-        par = 0.25,
+    opt <- optimize(
         lagr.tune.bw,
-        gr=NULL,
-        #maximum=FALSE,
+        interval=c(beta1, beta2),
+        tol=tol.bw,
+        maximum=FALSE,
         x=x,
         y=y,
         coords=coords,
@@ -93,13 +93,9 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
         lambda.min.ratio=lambda.min.ratio,
         n.lambda=n.lambda, 
         lagr.convergence.tol=lagr.convergence.tol,
-        lagr.max.iter=lagr.max.iter,
-        method="Brent",
-        lower=beta1,
-        upper=beta2,
-        control=list(reltol=tol.bw),
-        hessian=TRUE
+        lagr.max.iter=lagr.max.iter
     )
+
     trace = oo$trace[!duplicated(oo$trace[,1]),]
     rm(oo)
 
