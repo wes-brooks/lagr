@@ -4,6 +4,23 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+// killTest
+double killTest(Function ll, double x);
+extern "C" SEXP lagr_killTest(SEXP llSEXP, SEXP xSEXP) {
+BEGIN_RCPP
+    SEXP __sexp_result;
+    {
+        Rcpp::RNGScope __rngScope;
+        InputParameter< Function > ll( llSEXP );
+        InputParameter< double > x( xSEXP );
+        double __result = killTest(ll, x);
+        PROTECT(__sexp_result = Rcpp::wrap(__result));
+    }
+    UNPROTECT(1);
+    return __sexp_result;
+END_RCPP
+}
+
 // rcppLinNest
 int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function devfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, int reset);
 extern "C" SEXP lagr_rcppLinNest(SEXP XSEXP, SEXP ySEXP, SEXP wSEXP, SEXP adaweightsSEXP, SEXP linkinvSEXP, SEXP devfunSEXP, SEXP nrowSEXP, SEXP ncolSEXP, SEXP numGroupSEXP, SEXP rangeGroupIndSEXP, SEXP groupLenSEXP, SEXP lambdaSEXP, SEXP betaSEXP, SEXP innerIterSEXP, SEXP outerIterSEXP, SEXP threshSEXP, SEXP outerThreshSEXP, SEXP etaSEXP, SEXP gammaSEXP, SEXP betaIsZeroSEXP, SEXP resetSEXP) {

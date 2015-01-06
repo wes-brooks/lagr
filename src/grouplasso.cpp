@@ -10,13 +10,34 @@ using namespace std;
 
 double loglik(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, Function devfun)
 {
-    // Compute some values we need for the logLik computation:
-    NumericVector mu = linkinv(eta);
-    
-    // Calculate the actual log likelihood:
-    NumericVector dev_resids = devfun(y, mu, weights);
-    double ll = sum(dev_resids);
-    return(ll);
+    try {
+        // Compute some values we need for the logLik computation:
+        NumericVector mu = linkinv(eta);
+
+        // Calculate the actual log likelihood:
+        NumericVector dev_resids = devfun(y, mu, weights);
+        double ll = sum(dev_resids);
+        return(ll);
+    }
+    catch (...) {
+        cout << "Error in loglik!" << endl;
+
+        cout << "eta: ";
+        for( auto c : eta)
+            cout << c << ' ';
+        cout << endl;
+
+        cout << "y: ";
+        for( auto c : y)
+            cout << c << ' ';
+        cout << endl;
+
+        cout << "weights: ";
+        for( auto c : weights)
+            cout << c << ' ';
+        cout << endl;
+    }
+    return 0.;
 }
 
 
@@ -228,7 +249,12 @@ void rcppLinSolver(NumericMatrix X, NumericVector y, NumericVector w, NumericVec
     }
 }
 
-
+// [[Rcpp::export]]
+double killTest(Function ll, double x)
+{
+    NumericVector y = ll(x);
+    return y[0];
+}
 
 // [[Rcpp::export]]
 int rcppLinNest(NumericMatrix X, NumericVector y, NumericVector w, NumericVector adaweights, Function linkinv, Function devfun, int nrow, int ncol, int numGroup, IntegerVector rangeGroupInd, IntegerVector groupLen, NumericVector lambda, NumericMatrix beta, int innerIter, int outerIter, double thresh, double outerThresh, NumericVector eta, double gamma, IntegerVector betaIsZero, int reset)

@@ -29,6 +29,9 @@
 lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL, coords, oracle=NULL, kernel=NULL, bw.type=c('dist','knn','nen'), varselect.method=c('AIC','BIC','AICc','jacknife','wAIC', 'wAICc'), verbose=FALSE, longlat=FALSE, tol.loc=.Machine$double.eps^0.25, tol.bw=.Machine$double.eps^0.25, bwselect.method=c('AIC', 'AICc','GCV','BIC'), lambda.min.ratio=0.001, n.lambda=50, lagr.convergence.tol=0.001, lagr.max.iter=20, na.action=na.fail, contrasts=NULL) {
     result = list()
     class(result) <- "lagr.bw"
+
+    if (is.null(kernel))
+        stop("Error: There is no kernel specified!")
     
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
@@ -99,7 +102,7 @@ lagr.tune = function(formula, data, family=gaussian(), range=NULL, weights=NULL,
     trace = oo$trace[!duplicated(oo$trace[,1]),]
     rm(oo)
 
-    bdwt <- opt$par
+    bdwt <- opt$minimum
     result[['bw']] <- bdwt
     result[['trace']] <- trace
     result[['bwselect.method']] <- bwselect.method

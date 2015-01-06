@@ -25,6 +25,17 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
     result = list()
     class(result) = "lagr"
     
+    if (is(bw, 'lagr.bw')) {
+        bw.type = bw$bw.type
+        kernel = bw$kernel
+        bw = bw$bw
+    } else {
+        bw.type = match.arg(bw.type)
+    }
+    
+    if (is.null(kernel))
+        stop("Error: There is no kernel specified!")
+
     cl <- match.call()
     formula = eval.parent(substitute_q(formula, sys.frame(sys.parent())))
     mf = eval(lagr.parse.model.frame(formula, data, family, weights, coords, fit.loc, longlat, na.action, contrasts))
@@ -41,15 +52,7 @@ lagr <- function(formula, data, family=gaussian(), weights=NULL, coords, fit.loc
     
     #Set some variables that determine how we fit the model
     varselect.method = match.arg(varselect.method)
-    
-    if (is(bw, 'lagr.bw')) {
-        bw.type = bw$bw.type
-        kernel = bw$kernel
-        bw = bw$bw
-    } else {
-        bw.type = match.arg(bw.type)
-    }
-    
+
     #Fit the model:
     vcr.model = lagr.dispatch(
         x=x,

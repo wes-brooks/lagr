@@ -80,7 +80,7 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
     }
     
     max.dist = 10 * max(D)
-    min.dist = max.dist / 3000
+    min.dist = 0 #max.dist / 3000
     
     # Get the data and the weights
     y <- model.response(mf, "numeric")
