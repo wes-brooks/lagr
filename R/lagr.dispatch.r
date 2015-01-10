@@ -34,9 +34,9 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
     
     group.id = attr(x, 'assign')
     
-models = list()
-#    models = foreach(i=1:n, .errorhandling='stop') %dopar% {
-for (i in 1:n) {
+#models = list()
+    models = foreach(i=1:n, .errorhandling='stop') %dopar% {
+#for (i in 1:n) {
         if (!is.null(fit.loc)) {
             dist = drop(D[nrow(coords)+i,1:nrow(coords)])
         } else { dist = drop(D[i,]) }
@@ -142,8 +142,8 @@ for (i in 1:n) {
             cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; dispersion=", round(tail(m[['dispersion']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))
         }        
         m[['bw']] = bandwidth
-#        return(m)
-models[[i]] = m
+        return(m)
+#models[[i]] = m
     }
     
     vcr.model[['fits']] = models
