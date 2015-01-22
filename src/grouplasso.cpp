@@ -43,12 +43,38 @@ double loglik(NumericVector eta, NumericVector y, NumericVector weights, Functio
 
 void gradCalc(NumericVector eta, NumericVector y, NumericVector weights, Function linkinv, NumericVector ldot)
 {
-    // Compute some values we need for the gradient computation:
-    NumericVector mu = linkinv(eta);
-    double sumw = sum(weights);
+    try {
+        // Compute some values we need for the gradient computation:
+        NumericVector mu = linkinv(eta);
+        double sumw = sum(weights);
     
-    // Calculate the actual log likelihood:
-    ldot = weights * (mu-y) / sumw;
+        // Calculate the actual log likelihood:
+        ldot = weights * (mu-y) / sumw;
+    }
+    catch (...) {
+        cout << "Error in gradCalc!" << endl;
+
+        cout << "eta: ";
+        for( auto c : eta)
+            cout << c << ' ';
+        cout << endl;
+
+        cout << "y: ";
+        for( auto c : y)
+            cout << c << ' ';
+        cout << endl;
+
+        cout << "weights: ";
+        for( auto c : weights)
+            cout << c << ' ';
+        cout << endl;
+
+        cout << "ldot: ";
+        for( auto c : weights)
+            cout << c << ' ';
+        cout << endl;
+    }
+
 }
 
 
