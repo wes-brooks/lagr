@@ -21,12 +21,14 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     
     X = data$x
     Y = data$y
+    varnames = colnames(X)
     
     #Find the adaptive group weights:
     adamodel = glm(Y~X-1, weights=weights, family=family)
     adamodel$df.residual = sum(weights)
     dispersion = summary(adamodel)$dispersion
     adapt = adamodel$coef
+    names(adapt) = varnames
     
     groups = unique(index)
     n.g = length(groups)
@@ -107,11 +109,11 @@ grouplasso <- function(data, index, family, weights=NULL, maxit=1000, thresh=0.0
     res[['BIC']] = res[['BIC']][best.index]
     res[['AIC']] = res[['AIC']][best.index]
     res[['AICc']] = res[['AICc']][best.index]
-    beta = beta[,best.index]
+    beta = beta[,best.index, drop=FALSE]
     intercept = intercept[best.index]
-    res[['fitted']] = fitted[,best.index]
-    residuals = resid[,best.index]
-    dev.resid.values = dev.resid.values[,best.index]
+    res[['fitted']] = fitted[,best.index, drop=FALSE]
+    residuals = resid[,best.index, drop=FALSE]
+    dev.resid.values = dev.resid.values[,best.index, drop=FALSE]
     
     #Get the AIC-optimal weights
     w.lik = sqrt(t(dev.resid.values)) %*% sqrt(dev.resid.values) / dispersion

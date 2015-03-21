@@ -45,8 +45,9 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
             stop("Observation coordinates have to be given")
         
         # Get the coords from the data:
-        if (coords.is.char) coords = cbind(data[,coords])
-        else {
+        if (coords.is.char) {
+            coords = cbind(data[,coords, drop=FALSE])
+        } else {
             coords.expression = substitute(coords, env=sys.frame(sys.parent()))
             coords.expression[[1]] = as.name('cbind')
             coords = eval(coords.expression, data)
@@ -58,7 +59,7 @@ lagr.parse.model.frame = function(formula, data, family, weights, coords, fit.lo
     }
     
     # Get the matrices of distances and weights
-    coords = as.matrix(coords)
+    coords = as.matrix(coords, dimnames=list(NULL, colnames(coords)))
     q = ncol(coords)
     D.coords = rbind(coords, fit.loc)
     n = nrow(D.coords)

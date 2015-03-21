@@ -42,13 +42,13 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     if (0 %in% group.id)
         unpen = 0
     raw.vargroup = group.id
-        
+    
     #This is the naming system for the covariate-by-location interaction variables.
     raw.names = colnames(x)
     interact.names = vector()
     for (l in 1:length(raw.names)) {
-        for (ll in 1:ncol(coords)) {
-            interact.names = c(interact.names, paste(raw.names[l], ":", colnames(coords)[ll], sep=""))
+        for (m in 1:ncol(coords)) {
+            interact.names = c(interact.names, paste(raw.names[l], ":", colnames(coords)[m], sep=""))
         }
     }
 
@@ -57,7 +57,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     interacted = matrix(0, ncol=q*ncol(x), nrow=nrow(x))
     for (k in 1:ncol(x)) {
         for (ll in 1:q) {
-            interacted[,q*(k-1)+ll] = x[,k]*(coords[,ll]-loc[[ll]])
+            interacted[,q*(k-1)+ll] = x[,k, drop=FALSE]*(coords[,ll]-loc[[ll]])
             group.id = c(group.id, group.id[k])
         }
     }
@@ -70,12 +70,12 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     n.weighted = length(weighted)
 
     #Limit our attention to the observations with nonzero weight
-    xxx = as.matrix(x.interacted[weighted,])
+    xxx = as.matrix(x.interacted[weighted,, drop=FALSE])
     yyy = as.matrix(y[weighted])
     colocated = which(kernel.weights[weighted]==1)
     w = w[weighted]
     sumw = sum(w)
-
+    
     #Instantiate objects to store our output
     tunelist = list()
 
@@ -83,8 +83,8 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
         #Use the adaptive group lasso to produce a local model:
         model = grouplasso(data=list(x=xxx, y=yyy), weights=w, index=group.id, family=family, maxit=lagr.max.iter, delta=2, nlam=n.lambda, min.frac=lambda.min.ratio, thresh=lagr.convergence.tol, unpenalized=unpen)
 
-        vars = apply(as.matrix(model[['beta']]), 2, function(x) {which(x!=0)})
-        df = model[['results']][['df']] + 1 #Add one because we must estimate the scale parameter.
+        vars = apply(as.matrix(model$beta), 2, function(x) {which(x!=0)})
+        df = model$results$df + 1 #Add one because we must estimate the scale parameter.
     } else {
         model = glm(yyy~xxx-1, weights=w, family=family)
         vars = list(1:ncol(xxx))
@@ -103,14 +103,14 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     if (sumw > ncol(x)) {
         if (is.null(oracle)) {
             #Extract the fitted values for each lambda:
-            dispersion = model[['results']][['dispersion']] 
+            dispersion = model$results$dispersion
 
             #Using the grouplasso's criteria:
-            loss = model[['results']][[varselect.method]]
+            loss = model$results[[varselect.method]]
                 
             #Pick the lambda that minimizes the loss:
             k = which.min(loss)
-            localfit = model[['results']][['fitted']][colocated,]
+            localfit = model$results$fitted[colocated,]
             df = df[k]
             if (k > 1) {
                 varset = vars[[k]]
@@ -121,7 +121,7 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
             
         #Prepare some outputs for the bandwidth-finding scheme:
         tunelist[['localfit']] = localfit
-        tunelist[['criterion']] = model[['results']][[varselect.method]]
+        tunelist[['criterion']] = model$results[[varselect.method]]
         tunelist[['dispersion']] = dispersion
         tunelist[['n']] = sumw
         tunelist[['df']] = df
@@ -137,32 +137,38 @@ lagr.fit.inner = function(x, y, group.id, coords, loc, family, varselect.method,
     
     #Get the coefficients:
     if (is.null(oracle)) {
-        coefs = Matrix(drop(model[['beta']]))
+        coefs = drop(model$beta)
         rownames(coefs) = colnames(xxx)
 
         #Use AIC weights, or not:
         if (varselect.method %in% c('wAIC','wAICc')) {
             #Big average based on a selection criterion:
-            w = -model[['results']][[varselect.method]]
+            w = -model$results[[varselect.method]]
             w = matrix(w / sum(w))
-            coefs = (model[['beta']] %*% w)[1:length(orig.names)]
-            conf.zero = drop((model[['beta']]==0) %*% w)[1:length(orig.names)]
+            #coefs = (model$beta %*% w)[1:length(orig.names)]
+            #conf.zero = drop((model$beta==0) %*% w)[1:length(orig.names)]
+            coefs = drop(model$beta %*% w)
+            conf.zero = drop((model$beta==0) %*% w)
         } else {
-            coefs = model[['beta']][1:length(orig.names),k]
+            #coefs = model$beta[1:length(orig.names),k]
+            coefs = model$beta[,k]
             conf.zero = as.numeric(coefs==0)
-
+            names(conf.zero) = names(coefs)
         }
 
         #list the covariates that weren't shrunk to zero, but don't bother listing the intercept.
         nonzero = raw.names[which(raw.vargroup %in% unique(group.id[which(conf.zero!=1)]))]
         nonzero = nonzero[nonzero != "(Intercept)"]
 
-        names(coefs) = raw.names
-        names(conf.zero) = colnames(raw.names)
-    }
-    else {
-        coefs = rep(0, length(orig.names))
-        names(coefs) = orig.names
+        #names(coefs) = raw.names
+        #names(conf.zero) = colnames(raw.names)  
+        #names(coefs) = colnames(xxx)
+        #names(conf.zero) = colnames(xxx)    
+    } else {
+        #coefs = rep(0, length(orig.names))
+        #names(coefs) = orig.names
+        coefs = rep(0, ncol(xxx))
+        names(coefs) = colnames(xxx)
         coefs[raw.names] = coef(model)[1:length(oracle)]
         nonzero = raw.names
         conf.zero = rep(0, length(orig.names))

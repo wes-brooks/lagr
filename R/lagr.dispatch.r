@@ -119,11 +119,11 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
         #Fit the local model
         m = list(tunelist=list('ssr-loc'=list('pearson'=Inf, 'deviance'=Inf), 'df-local'=1), 'sigma2'=0, 'nonzero'=vector(), 'weightsum'=sum(kernel.weights))
         try(m <- lagr.fit.inner(
-            x=x[indx,],
+            x=x[indx,, drop=FALSE],
             y=y[indx],
             group.id=group.id,
             family=family,
-            coords=as.matrix(coords[indx,]),
+            coords=coords[indx,, drop=FALSE],
             loc=loc,
             varselect.method=varselect.method,
             tuning=tuning,
@@ -139,14 +139,14 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
             oracle=oracle.loc)
         )
         if (verbose) {
-            cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m[['s']], "; dispersion=", round(tail(m[['dispersion']],1),3), "; nonzero=", paste(m[['nonzero']], collapse=","), "; weightsum=", round(m[['weightsum']],3), ".\n", sep=''))
+            cat(paste("For i=", i, "; location=(", paste(round(loc,3), collapse=","), "); bw=", round(bandwidth,3), "; s=", m$s, "; dispersion=", round(tail(m$dispersion, 1), 3), "; nonzero=", paste(m$nonzero, collapse=","), "; weightsum=", round(m$weightsum, 3), ".\n", sep=''))
         }        
-        m[['bw']] = bandwidth
+        m$bw = bandwidth
         return(m)
 #models[[i]] = m
     }
     
-    vcr.model[['fits']] = models
+    vcr.model$fits = models
     
     #Calculate information criteria:
     fitted = vector()
@@ -156,27 +156,27 @@ lagr.dispatch = function(x, y, family, coords, fit.loc, oracle, D, bw, bw.type, 
     #Compute model-average fitted values and degrees of freedom:
     for (x in models) {
         #Compute the model-averaging weights:
-        crit = x[['tunelist']][['criterion']]        
+        crit = x$tunelist$criterion
         if (varselect.method %in% c("AIC", "AICc", "BIC")) {
             crit.weights = as.numeric(crit==min(crit))
         } else if (varselect.method %in% c("wAIC", "wAICc")) {
             crit.weights = -crit
         }
         
-        fitted = c(fitted, sum(x[['tunelist']][['localfit']] * crit.weights) / sum(crit.weights))
-        df = df + sum((1+x[['model']][['results']][['df']]) * crit.weights / x[['weightsum']] ) / sum(crit.weights)
+        fitted = c(fitted, sum(x$tunelist$localfit * crit.weights) / sum(crit.weights))
+        df = df + sum((1 + x$model$results$df) * crit.weights / x$weightsum ) / sum(crit.weights)
     }
 
     dev.resids = family$dev.resids(y, fitted, prior.weights)
     ll = family$aic(y, n, fitted, prior.weights, sum(dev.resids))
 
     #Compute the information criteria:
-    vcr.model[['AICc']] = ll + 2*df + 2*df*(df+1)/(n-df-1)
-    vcr.model[['AIC']] = ll + 2*df
-    vcr.model[['GCV']] = ll
-    vcr.model[['BIC']] = ll + log(n)*df
+    vcr.model$AICc = ll + 2*df + 2*df*(df+1)/(n-df-1)
+    vcr.model$AIC = ll + 2*df
+    vcr.model$GCV = ll
+    vcr.model$BIC = ll + log(n)*df
 
-    vcr.model[['df']] = df
+    vcr.model$df = df
     
     return(vcr.model)
 }
